@@ -21,13 +21,17 @@ h1{text-align:center;color:var(--rosa);font-weight:500}
 #citas h2{color:var(--rosa);font-weight:500;margin:28px 0 10px}
 
 .album{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
-.album img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer}
+.album button{position:relative;padding:0;border:0;border-radius:8px;overflow:hidden;background:#f3d6df;cursor:pointer}
+.album img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.album .video::after{content:'▶';position:absolute;inset:0;display:grid;place-items:center;font-size:2.2rem;color:#fff;text-shadow:0 0 10px #000a}
 dialog{border:0;border-radius:12px;max-width:min(600px,92vw);padding:24px;color:inherit}
 dialog::backdrop{background:#0008}
 #carta p{white-space:pre-line;line-height:1.7}
 #carta button{background:var(--rosa);color:#fff;border:0;border-radius:8px;padding:8px 16px;font:inherit;cursor:pointer}
 #foto{padding:0;background:none}
-#foto img{max-width:92vw;max-height:80vh;display:block;border-radius:12px}
+#marco{position:relative;border-radius:12px;overflow:hidden}
+#marco img{position:absolute;left:50%;top:50%}
+#marco iframe{display:block;width:100%;height:100%;border:0}
 #foto p{color:#fff;text-align:center}
 </style>
 </head>
@@ -49,7 +53,7 @@ dialog::backdrop{background:#0008}
 </main>
 
 <dialog id="carta"><h2></h2><p></p><form method="dialog"><button>Cerrar</button></form></dialog>
-<dialog id="foto"><img alt=""><p></p></dialog>
+<dialog id="foto"><div id="marco"><img alt=""><iframe allow="autoplay; fullscreen" allowfullscreen hidden></iframe></div><p></p></dialog>
 
 <script>
 // ✏️ ===== EDITA AQUÍ ===== ✏️
@@ -113,14 +117,43 @@ setInterval(contar, 1000);
 
 // Álbum
 const dlgFoto = document.getElementById('foto');
+const [verImg, verVideo] = dlgFoto.querySelectorAll('img, iframe');
 dlgFoto.onclick = () => dlgFoto.close();
+dlgFoto.onclose = () => verVideo.src = 'about:blank'; // detiene el video
 const citas = document.getElementById('citas');
 const foto = (id, ancho) => `https://drive.google.com/thumbnail?id=${id}&sz=w${ancho}`;
+const fecha = f => f.name.replace(/^\D+/, ''); // IMG_20260904_... / VID_20260904_... → orden cronológico
+
+// Drive entrega las miniaturas sin girar; rotation = cuartos de vuelta que faltan
+const giro = f => (f.imageMediaMetadata?.rotation || 0) * 90;
+
+function abrir(f) {
+  const video = f.mimeType.startsWith('video/');
+  const {width: w = 16, height: h = 9} = (video ? f.videoMediaMetadata : f.imageMediaMetadata) || {};
+  const g = giro(f), [vw, vh] = g % 180 ? [h, w] : [w, h]; // tamaño ya girado
+  const s = Math.min(innerWidth * .92 / vw, innerHeight * .8 / vh);
+  const marco = document.getElementById('marco');
+  marco.style.width = vw * s + 'px';
+  marco.style.height = vh * s + 'px';
+  verImg.hidden = video;
+  verVideo.hidden = !video;
+  if (video) {
+    verVideo.src = `https://drive.google.com/file/d/${f.id}/preview`;
+  } else {
+    verImg.style.width = w * s + 'px';
+    verImg.style.height = h * s + 'px';
+    verImg.style.transform = `translate(-50%, -50%) rotate(${g}deg)`;
+    verImg.src = foto(f.id, 2000);
+  }
+  dlgFoto.querySelector('p').textContent = f.description || '';
+  dlgFoto.showModal();
+}
 
 async function driveListar(carpeta, filtro) {
   const q = encodeURIComponent(`'${carpeta}' in parents and trashed = false and ${filtro}`);
   const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&orderBy=name&pageSize=1000` +
-    `&fields=files(id,name,description)&key=${DRIVE_CLAVE}`);
+    `&fields=files(id,name,description,mimeType,imageMediaMetadata(width,height,rotation),videoMediaMetadata(width,height))` +
+    `&key=${DRIVE_CLAVE}`);
   if (!r.ok) throw new Error(`Drive respondió ${r.status}`);
   return (await r.json()).files;
 }
@@ -130,24 +163,25 @@ async function cargarAlbum() {
   citas.textContent = 'Cargando fotos…';
   try {
     const carpetas = await driveListar(DRIVE_CARPETA, "mimeType = 'application/vnd.google-apps.folder'");
-    const fotos = await Promise.all(carpetas.map(c => driveListar(c.id, "mimeType contains 'image/'")));
+    const archivos = await Promise.all(carpetas.map(c =>
+      driveListar(c.id, "(mimeType contains 'image/' or mimeType contains 'video/')")));
     citas.textContent = '';
     carpetas.forEach((c, i) => {
       const h = document.createElement('h2');
       h.textContent = c.name.replace(/^\d+\s*[-.·]?\s*/, ''); // quita el número de orden
       const grid = document.createElement('div');
       grid.className = 'album';
-      for (const f of fotos[i]) {
+      for (const f of archivos[i].sort((a, b) => fecha(a).localeCompare(fecha(b)))) {
+        const b = document.createElement('button');
+        if (f.mimeType.startsWith('video/')) b.className = 'video';
         const img = document.createElement('img');
         img.src = foto(f.id, 400);
         img.alt = f.description || '';
         img.loading = 'lazy';
-        img.onclick = () => {
-          dlgFoto.querySelector('img').src = foto(f.id, 2000);
-          dlgFoto.querySelector('p').textContent = f.description || '';
-          dlgFoto.showModal();
-        };
-        grid.append(img);
+        img.style.transform = `rotate(${giro(f)}deg)`;
+        b.append(img);
+        b.onclick = () => abrir(f);
+        grid.append(b);
       }
       citas.append(h, grid);
     });
