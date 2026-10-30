@@ -18,6 +18,8 @@ h1{text-align:center;color:var(--rosa);font-weight:500}
 .carta small{display:block;opacity:.6;margin-top:4px}
 .grande{font-size:4.5rem;text-align:center;color:var(--rosa);margin:24px 0 0}
 .centro{text-align:center}
+#citas h2{color:var(--rosa);font-weight:500;margin:28px 0 10px}
+#citas h2 small{font-size:.8rem;opacity:.6;color:var(--texto)}
 .album{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
 .album img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer}
 dialog{border:0;border-radius:12px;max-width:min(600px,92vw);padding:24px;color:inherit}
@@ -43,7 +45,7 @@ dialog::backdrop{background:#0008}
     <p class="centro" id="detalle"></p>
     <p class="centro" id="segundos"></p>
   </section>
-  <section id="album" hidden><h1>Nuestro álbum</h1><div class="album"></div></section>
+  <section id="album" hidden><h1>Nuestro álbum</h1><div id="citas"></div></section>
 </main>
 
 <dialog id="carta"><h2></h2><p></p><form method="dialog"><button>Cerrar</button></form></dialog>
@@ -51,16 +53,17 @@ dialog::backdrop{background:#0008}
 
 <script>
 // ✏️ ===== EDITA AQUÍ ===== ✏️
-const INICIO = '2026-08-04T00:00-05:00'; // fecha y hora en que empezaron (hora Colombia)
+const INICIO = '2026-09-04T00:00-05:00'; // fecha y hora en que empezaron (hora Colombia)
 
 const CARTAS = [
   {titulo: 'Mi primera carta', fecha: '30 oct 2026', texto: `Escribe aquí tu carta.
 Puedes usar varias líneas.`},
 ];
 
-// Pon las fotos dentro de la carpeta "fotos" y escribe sus nombres aquí
-const FOTOS = [
-  // {archivo: 'foto1.jpg', texto: 'Nuestra primera cita'},
+// Álbum por citas: cada cita tiene su carpeta dentro de "fotos"
+const CITAS = [
+  // {titulo: 'El día que nos hicimos novios', fecha: '4 sep 2026', carpeta: '00-novios',
+  //  fotos: [{archivo: 'foto1.jpg', texto: 'Aquí empezó todo'}]},
 ];
 // ✏️ ====================== ✏️
 
@@ -112,17 +115,26 @@ setInterval(contar, 1000);
 // Álbum
 const dlgFoto = document.getElementById('foto');
 dlgFoto.onclick = () => dlgFoto.close();
-for (const f of FOTOS) {
-  const img = document.createElement('img');
-  img.src = 'fotos/' + f.archivo;
-  img.alt = f.texto || '';
-  img.loading = 'lazy';
-  img.onclick = () => {
-    dlgFoto.querySelector('img').src = img.src;
-    dlgFoto.querySelector('p').textContent = f.texto || '';
-    dlgFoto.showModal();
-  };
-  document.querySelector('.album').append(img);
+for (const c of CITAS) {
+  const h = document.createElement('h2');
+  h.innerHTML = '<span></span> <small></small>';
+  h.querySelector('span').textContent = c.titulo;
+  h.querySelector('small').textContent = c.fecha || '';
+  const grid = document.createElement('div');
+  grid.className = 'album';
+  for (const f of c.fotos) {
+    const img = document.createElement('img');
+    img.src = `fotos/${c.carpeta}/${f.archivo}`;
+    img.alt = f.texto || '';
+    img.loading = 'lazy';
+    img.onclick = () => {
+      dlgFoto.querySelector('img').src = img.src;
+      dlgFoto.querySelector('p').textContent = f.texto || '';
+      dlgFoto.showModal();
+    };
+    grid.append(img);
+  }
+  document.getElementById('citas').append(h, grid);
 }
 </script>
 </body>
