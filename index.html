@@ -6,35 +6,41 @@
 <title>Para ti ❤</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500&display=swap">
 <style>
-:root{--rosa:#e75480;--fondo:#fff5f8;--texto:#4a2c36}
+/* Paleta Cinnamoroll */
+:root{--cielo:#dff2fc;--azul:#8ccbee;--azul-osc:#4a8fc4;--rosado:#f7a8c4;--fondo:#eef8fe;--texto:#3b5f80}
 *{box-sizing:border-box}
-body{margin:0;font-family:system-ui,sans-serif;background:var(--fondo);color:var(--texto)}
-nav{position:sticky;top:0;z-index:1;display:flex;background:#fff;box-shadow:0 2px 8px #0001}
-nav button{flex:1;padding:14px;border:0;border-bottom:3px solid transparent;background:none;font:inherit;color:inherit;cursor:pointer}
-nav button[aria-selected=true]{border-color:var(--rosa);color:var(--rosa);font-weight:600}
+body{margin:0;font-family:system-ui,sans-serif;background:var(--fondo) repeating-conic-gradient(#e6f4fd 0 25%,transparent 0 50%) 0 0/28px 28px;color:var(--texto)}
+h1,h2,nav,.grande,.carta strong,#carta button{font-family:'Pixelify Sans',system-ui,sans-serif}
+nav{position:sticky;top:0;z-index:1;display:flex;background:#fff;border-bottom:3px solid var(--azul)}
+nav button{flex:1;padding:14px;border:0;border-bottom:3px solid transparent;margin-bottom:-3px;background:none;font:inherit;font-size:1.05rem;color:var(--azul-osc);cursor:pointer}
+nav button[aria-selected=true]{border-color:var(--azul-osc);background:var(--cielo)}
 main{max-width:720px;margin:auto;padding:16px}
-h1{text-align:center;color:var(--rosa);font-weight:500}
+h1{text-align:center;color:var(--azul-osc);font-weight:500}
+h1::after{content:' ☁';color:var(--azul)}
 .cartas{display:grid;gap:12px}
-.carta{display:flex;gap:14px;align-items:center;padding:12px;border:0;border-radius:12px;background:#fff;box-shadow:0 2px 8px #0001;text-align:left;font:inherit;color:inherit;cursor:pointer}
-.carta small{display:block;opacity:.6;margin-top:4px}
-.mini{width:64px;height:64px;flex:none;border-radius:8px;overflow:hidden;background:#f3d6df}
+.carta{display:flex;gap:14px;align-items:center;padding:12px;border:3px solid var(--azul);border-radius:6px;background:#fff;box-shadow:4px 4px 0 var(--azul);text-align:left;font:inherit;color:inherit;cursor:pointer}
+.carta strong{color:var(--azul-osc);font-weight:500;font-size:1.1rem}
+.carta small{display:block;opacity:.7;margin-top:4px}
+.mini{width:64px;height:64px;flex:none;border-radius:4px;overflow:hidden;background:var(--cielo)}
 .mini img{width:100%;height:100%;object-fit:cover;display:block}
-.grande{font-size:4.5rem;text-align:center;color:var(--rosa);margin:24px 0 0}
+.grande{font-size:4.5rem;text-align:center;color:var(--azul-osc);margin:24px 0 0}
 .centro{text-align:center}
-#citas h2{color:var(--rosa);font-weight:500;margin:28px 0 10px}
-
+#contador .centro{font-size:1.1rem}
+#citas h2{color:var(--azul-osc);font-weight:500;margin:28px 0 10px}
+#citas h2::before{content:'♡ ';color:var(--rosado)}
 .album{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
-.album button{position:relative;padding:0;border:0;border-radius:8px;overflow:hidden;background:#f3d6df;cursor:pointer}
+.album button{position:relative;padding:0;border:3px solid #fff;border-radius:6px;overflow:hidden;background:var(--cielo);box-shadow:0 0 0 2px var(--azul);cursor:pointer}
 .album img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
 .album .video::after{content:'▶';position:absolute;inset:0;display:grid;place-items:center;font-size:2.2rem;color:#fff;text-shadow:0 0 10px #000a}
-dialog{border:0;border-radius:12px;max-width:min(600px,92vw);padding:24px;color:inherit}
-dialog::backdrop{background:#0008}
-#carta{max-width:min(800px,92vw)}
+dialog{border:3px solid var(--azul);border-radius:6px;max-width:min(600px,92vw);padding:24px;color:inherit}
+dialog::backdrop{background:#2a4a6688}
+#carta{max-width:min(800px,92vw);box-shadow:6px 6px 0 var(--azul)}
+#carta h2{color:var(--azul-osc);font-weight:500}
 #carta .marco{margin-bottom:12px;border-radius:4px;box-shadow:0 2px 8px #0002}
-#carta button{background:var(--rosa);color:#fff;border:0;border-radius:8px;padding:8px 16px;font:inherit;cursor:pointer}
-/* Inicio estilo Cinnamoroll */
-#inicio{--cielo:#dff2fc;--azul:#8ccbee;--azul-osc:#4a8fc4;--rosado:#f7a8c4;
-  position:fixed;inset:0;z-index:2;display:grid;place-items:center;overflow:hidden;padding:16px;text-align:center;
+#carta button{background:var(--rosado);color:#fff;border:3px solid var(--azul-osc);border-radius:4px;padding:8px 20px;font-size:1rem;box-shadow:3px 3px 0 var(--azul-osc);cursor:pointer}
+#foto{border:0}
+/* Inicio */
+#inicio{position:fixed;inset:0;z-index:2;display:grid;place-items:center;overflow:hidden;padding:16px;text-align:center;
   background:linear-gradient(#e9f7ff,#fdf0f6);font-family:'Pixelify Sans',system-ui,sans-serif;color:var(--azul-osc);
   user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:opacity .6s}
 #inicio.saliendo{opacity:0}
@@ -319,7 +325,7 @@ function contar() {
   document.getElementById('detalle').textContent =
     `${p(Math.floor(meses / 12), 'año', 'años')}, ${p(meses % 12, 'mes', 'meses')} y ${p(d, 'día', 'días')}`;
   document.getElementById('segundos').textContent =
-    `o ${Math.floor((n - s) / 1000).toLocaleString('es')} segundos ❤`;
+    `o ${Math.floor((n - s) / 1000).toLocaleString('es')} segundos 💙`;
 }
 contar();
 setInterval(contar, 1000);
@@ -389,7 +395,19 @@ async function driveListar(carpeta, filtro) {
   return (await r.json()).files;
 }
 
+// Si en la carpeta principal hay una imagen llamada "cinnamoroll…", reemplaza al dibujo del inicio
+async function cargarCinnamoroll() {
+  const [f] = await driveListar(DRIVE_CARPETA, "mimeType contains 'image/' and name contains 'cinnamoroll'");
+  if (!f) return;
+  const img = new Image();
+  img.className = 'cinna';
+  img.alt = 'Cinnamoroll';
+  img.onload = () => document.querySelector('svg.cinna')?.replaceWith(img);
+  img.src = `https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&key=${DRIVE_CLAVE}`; // original, conserva el fondo transparente
+}
+
 async function cargarDrive() {
+  cargarCinnamoroll().catch(() => {}); // si falla, se queda el dibujo
   citas.textContent = listaCartas.textContent = 'Cargando…';
   try {
     const todas = await driveListar(DRIVE_CARPETA, "mimeType = 'application/vnd.google-apps.folder'");
