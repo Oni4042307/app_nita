@@ -440,15 +440,15 @@ for (let i = 0; i < 18; i++) { // estrellas
 }
 document.getElementById('cabeza-cinna').append(document.querySelector('svg.cinna').cloneNode(true));
 
-// Vuelo en bucle de 12 s: escribe "te amo" (0–4,5 s), baja y aterriza a la derecha (4,5–6 s),
-// se queda 3 s, despega (9–10,5 s) mientras la estela se desvanece, y cielo vacío hasta repetir
+// Vuelo en bucle de 13,5 s: escribe "te amo" (0–4,5 s), planea hasta la pista a la derecha (4,5–7,5 s),
+// se queda 3 s, despega (10,5–12 s) mientras la estela se desvanece, y cielo vacío hasta repetir
 const avion = document.getElementById('cabeza-cinna'), estela = document.querySelector('.estela');
 const humo = estela.querySelector('.humo'), revela = estela.querySelector('#revela path');
 const BANDA = 36, onda = x => BANDA + 6 * Math.sin(x / 38); // altura de la estela
 const suave = t => t < .5 ? 2 * t * t : 1 - (2 - 2 * t) ** 2 / 2;
 const mezcla = (a, b, t) => a + (b - a) * t;
 const COLA = 34; // la cola del avión (de donde sale la estela) está a esta altura desde su borde de arriba
-let anchoTrazado = 0, ruta = [], largos = [], pista = [0, 0];
+let anchoTrazado = 0, ruta = [], largos = [], pista = [0, 0], largoOnda = 0;
 // Ruta de la cola: onda de lado a lado y luego una curva que baja hasta la pista (abajo a la derecha)
 function trazar(W, H) {
   anchoTrazado = W;
@@ -458,15 +458,21 @@ function trazar(W, H) {
   texto.setAttribute('y', BANDA + 12);
   const caja = texto.getBBox();
   pista = [W - 86, H - 74];
-  const xFin = W - 70, a = [xFin, onda(xFin)], c = [W + 10, onda(xFin) + 30], b = [pista[0], pista[1] + COLA];
+  // bajada suave (Bézier cúbica): termina de escribir, sigue derecho y va perdiendo altura sin salirse
+  // de la pantalla (el avión mide 76 px, así que su borde izquierdo nunca pasa de W − 80)
+  const borde = W - 80, xFin = Math.min(borde - 20, Math.max(caja.x + caja.width + 12, W - 170));
+  const a = [xFin, onda(xFin)], b = [pista[0], pista[1] + COLA];
+  const c1 = [borde, a[1]], c2 = [borde, b[1] - 40];
   ruta = [];
   for (let x = -90; x < xFin; x += 4) ruta.push([x, onda(x)]);
-  for (let i = 0; i <= 30; i++) { // curva de bajada (Bézier cuadrática)
-    const t = i / 30, u = 1 - t;
-    ruta.push([u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]);
+  const nOnda = ruta.length;
+  for (let i = 1; i <= 40; i++) {
+    const t = i / 40, u = 1 - t;
+    ruta.push([0, 1].map(j => u ** 3 * a[j] + 3 * u * u * t * c1[j] + 3 * u * t * t * c2[j] + t ** 3 * b[j]));
   }
   largos = [0];
   for (let i = 1; i < ruta.length; i++) largos.push(largos[i - 1] + Math.hypot(ruta[i][0] - ruta[i - 1][0], ruta[i][1] - ruta[i - 1][1]));
+  largoOnda = largos[nOnda - 1];
   // estela: la misma ruta pero con un hueco donde va "te amo"
   const enHueco = ([x, y]) => y < BANDA + 20 && x > caja.x - 8 && x < caja.x + caja.width + 8;
   let d = '', pluma = false;
@@ -488,20 +494,24 @@ function enRuta(dist) { // punto y ángulo de la ruta a cierta distancia recorri
 function volar(t) {
   const W = cielo.clientWidth, H = cielo.clientHeight;
   if (W !== anchoTrazado) trazar(W, H);
-  const k = t % 12000, total = largos[largos.length - 1];
-  let x, y, giro, recorrido = total;
-  if (k < 6000) {                       // escribe "te amo" y baja a la pista dejando la estela
-    recorrido = total * k / 6000;
-    let cola;
+  const k = t % 13500, total = largos[largos.length - 1];
+  let x, y, giro, recorrido = total, cola;
+  if (k < 4500) {                       // escribe "te amo" de lado a lado
+    recorrido = largoOnda * k / 4500;
     [x, cola, giro] = enRuta(recorrido);
     y = cola - COLA;
-    giro = Math.max(-35, Math.min(35, giro));
-  } else if (k < 9000) {                // aterrizado, flotando suave
+  } else if (k < 7500) {                // planea hacia la pista frenando poco a poco
+    const e = 1 - (1 - (k - 4500) / 3000) ** 3; // sale a la misma velocidad y llega casi detenido
+    recorrido = largoOnda + (total - largoOnda) * e;
+    [x, cola, giro] = enRuta(recorrido);
+    y = cola - COLA;
+    giro = Math.max(-18, Math.min(18, giro * .5)) * (1 - e); // se endereza al tocar la pista
+  } else if (k < 10500) {               // aterrizado 3 s, flotando suave
     [x, y] = pista;
-    y += 3 * Math.sin((k - 6000) / 400);
+    y += 3 * Math.sin((k - 7500) / 400);
     giro = 0;
-  } else if (k < 10500) {               // despega y se va por la derecha
-    const e = suave((k - 9000) / 1500);
+  } else if (k < 12000) {               // despega y se va por la derecha
+    const e = suave((k - 10500) / 1500);
     x = mezcla(pista[0], W + 100, e);
     y = mezcla(pista[1], -60, e);
     giro = -14 * Math.sin(Math.PI * e);
@@ -512,7 +522,7 @@ function volar(t) {
   avion.style.top = y + 'px';
   avion.style.rotate = giro + 'deg';
   revela.setAttribute('stroke-dasharray', `${recorrido} 99999`);
-  humo.style.opacity = k < 9000 ? .9 : Math.max(0, .9 - (k - 9000) / 1000);
+  humo.style.opacity = k < 10500 ? .9 : Math.max(0, .9 - (k - 10500) / 1000);
   requestAnimationFrame(volar);
 }
 document.fonts.ready.then(() => requestAnimationFrame(volar)); // el hueco del texto se mide con la letra ya cargada
