@@ -73,14 +73,20 @@ dialog::backdrop{background:#2a4a6688}
 .abierto .solapa{transform:rotateX(180deg)}
 .sello{position:absolute;left:50%;top:44px;z-index:2;translate:-50% 0;color:#ff7aa8;font-size:26px;transition:opacity .3s}
 .abierto .sello{opacity:0}
-#arco{margin-top:36px;font-size:64px;line-height:1;background:none;border:0;cursor:pointer;rotate:-45deg;touch-action:none;transition:scale .15s}
-#arco.tensando{scale:1.15 .85}
+/* arco dibujado: la cuerda y la flecha se mueven según la carga (1 unidad del SVG = 1 px) */
+#arco{width:140px;height:160px;margin-top:20px;overflow:visible;cursor:grab;touch-action:none}
+#arco:active{cursor:grabbing}
+#arco .limbo{fill:none;stroke:var(--azul);stroke-width:8;stroke-linecap:round;transition:stroke .2s}
+#arco .cuerda{fill:none;stroke:var(--azul-osc);stroke-width:2.5;stroke-linejoin:round}
+#arco .puntas{fill:var(--rosado)}
+#arco.lista .limbo{stroke:var(--rosa-letra);filter:drop-shadow(0 0 6px var(--rosa-letra))}
+#arco.lista{animation:vibrar .12s linear infinite}
+@keyframes vibrar{50%{translate:1px 0}}
 .carga{width:140px;height:10px;border:2px solid var(--azul);border-radius:6px;background:#fff;overflow:hidden}
 .carga i{display:block;height:100%;width:0;background:repeating-linear-gradient(90deg,var(--rosado) 0 6px,#ff8fb5 6px 12px)}
 .pista{font-size:13px;opacity:.8;max-width:320px}
 .tiembla{animation:temblar .3s}
 @keyframes temblar{25%{translate:-6px}75%{translate:6px}}
-#flecha{position:fixed;font-size:34px;pointer-events:none}
 #ventana{position:relative;z-index:1;width:min(340px,92vw);background:#fff;border:3px solid var(--azul);border-radius:6px;box-shadow:6px 6px 0 var(--azul);animation:aparecer .45s cubic-bezier(.3,1.6,.6,1)}
 @keyframes aparecer{from{transform:scale(.3);opacity:0}}
 .barra{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--azul);color:#fff;font-size:15px}
@@ -120,9 +126,18 @@ dialog::backdrop{background:#2a4a6688}
   <div id="paso1">
     <div class="sobre"><div class="solapa"></div><span class="sello">♥</span></div>
     <p class="titulo">A Little Surprise</p>
-    <button id="arco" aria-label="Bow">🏹</button>
+    <svg id="arco" viewBox="0 0 140 160" role="button" aria-label="Bow">
+      <path class="limbo" d="M15 80Q70-15 125 80"/>
+      <circle class="puntas" cx="15" cy="80" r="6"/><circle class="puntas" cx="125" cy="80" r="6"/>
+      <polyline class="cuerda" points="15,80 70,80 125,80"/>
+      <g class="flechita">
+        <line x1="70" y1="24" x2="70" y2="82" stroke="#c98a5a" stroke-width="3" stroke-linecap="round"/>
+        <path d="M70 14C64 6 54 12 58 20L70 32L82 20C86 12 76 6 70 14Z" fill="#ff7aa8"/>
+        <path d="M70 70l-8 12M70 70l8 12M70 76l-8 12M70 76l8 12" stroke="#f7a8c4" stroke-width="3" stroke-linecap="round"/>
+      </g>
+    </svg>
     <div class="carga"><i></i></div>
-    <p class="pista">Hold to draw the bow – release to shoot ♡</p>
+    <p class="pista">Hold to draw the bow – release when it's full ♡</p>
   </div>
   <div id="ventana" hidden>
     <div class="barra"><span>LOVE ☁</span><span><i></i><i></i><i></i></span></div>
@@ -213,26 +228,32 @@ for (let i = 0; i < 16; i++) {
   inicio.prepend(s);
 }
 
-// arco: mantener presionado carga, soltar dispara (necesita al menos 40 %)
+// arco: mantener presionado tensa la cuerda; solo dispara si se suelta con la carga al máximo
+const cuerda = arco.querySelector('.cuerda'), flechita = arco.querySelector('.flechita');
+const TENSION = 45; // cuánto baja la cuerda con carga completa
 let inicioCarga = 0, carga = 0;
+function tensar(k) {
+  cuerda.setAttribute('points', `15,80 70,${80 + TENSION * k} 125,80`);
+  flechita.style.transform = `translateY(${TENSION * k}px)`;
+  barraCarga.style.width = k * 100 + '%';
+  arco.classList.toggle('lista', k === 1);
+}
 function cargar() {
   if (!inicioCarga) return;
-  carga = Math.min(1, (performance.now() - inicioCarga) / 900);
-  barraCarga.style.width = carga * 100 + '%';
+  carga = Math.min(1, (performance.now() - inicioCarga) / 1200);
+  tensar(carga);
   requestAnimationFrame(cargar);
 }
 arco.onpointerdown = e => {
   arco.setPointerCapture(e.pointerId);
-  arco.classList.add('tensando');
   inicioCarga = performance.now();
   cargar();
 };
 arco.onpointerup = arco.onpointercancel = () => {
   if (!inicioCarga) return;
   inicioCarga = 0;
-  arco.classList.remove('tensando');
-  if (carga < .4) {
-    barraCarga.style.width = 0;
+  if (carga < 1) {
+    tensar(0); // la cuerda vuelve sin disparar
     const pista = document.querySelector('.pista');
     pista.classList.remove('tiembla');
     pista.offsetWidth; // reinicia la animación
@@ -244,19 +265,16 @@ arco.onpointerup = arco.onpointercancel = () => {
 arco.oncontextmenu = e => e.preventDefault(); // el toque largo en celular no abre menú
 
 function disparar() {
-  const desde = arco.getBoundingClientRect(), sobre = document.querySelector('.sobre');
+  arco.style.pointerEvents = 'none';
+  arco.classList.remove('lista');
+  cuerda.setAttribute('points', '15,80 70,80 125,80'); // la cuerda se suelta
+  const punta = flechita.getBoundingClientRect(), sobre = document.querySelector('.sobre');
   const hasta = sobre.getBoundingClientRect();
-  const f = document.createElement('span');
-  f.id = 'flecha';
-  f.textContent = '💘';
-  f.style.left = desde.left + desde.width / 2 - 17 + 'px';
-  f.style.top = desde.top + 'px';
-  inicio.append(f);
-  arco.disabled = true;
-  f.animate([{transform: 'none'},
-    {transform: `translate(${hasta.left + hasta.width / 2 - desde.left - desde.width / 2}px, ${hasta.top + hasta.height / 2 - desde.top}px) scale(.6)`}],
-    {duration: 450, easing: 'ease-in', fill: 'forwards'}).onfinish = () => {
-    f.remove();
+  const dx = hasta.left + hasta.width / 2 - (punta.left + punta.width / 2);
+  const dy = hasta.top + hasta.height / 2 - punta.top + TENSION;
+  flechita.animate([{transform: `translateY(${TENSION}px)`}, {transform: `translate(${dx}px, ${dy}px)`}],
+    {duration: 380, easing: 'ease-in', fill: 'forwards'}).onfinish = () => {
+    flechita.remove();
     sobre.classList.add('abierto');
     setTimeout(() => {
       document.getElementById('paso1').remove();
