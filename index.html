@@ -61,7 +61,7 @@ dialog::backdrop{background:#2a4a6688}
 .tiembla{animation:temblar .3s}
 @keyframes temblar{25%{translate:-6px}75%{translate:6px}}
 #flecha{position:fixed;font-size:34px;pointer-events:none}
-#ventana{width:min(340px,92vw);background:#fff;border:3px solid var(--azul);border-radius:6px;box-shadow:6px 6px 0 var(--azul);animation:aparecer .45s cubic-bezier(.3,1.6,.6,1)}
+#ventana{position:relative;z-index:1;width:min(340px,92vw);background:#fff;border:3px solid var(--azul);border-radius:6px;box-shadow:6px 6px 0 var(--azul);animation:aparecer .45s cubic-bezier(.3,1.6,.6,1)}
 @keyframes aparecer{from{transform:scale(.3);opacity:0}}
 .barra{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--azul);color:#fff;font-size:15px}
 .barra i{display:inline-block;width:12px;height:12px;margin-left:4px;background:#fff;border-radius:2px}
@@ -399,11 +399,42 @@ async function driveListar(carpeta, filtro) {
 async function cargarCinnamoroll() {
   const [f] = await driveListar(DRIVE_CARPETA, "mimeType contains 'image/' and name contains 'cinnamoroll'");
   if (!f) return;
-  const img = new Image();
-  img.className = 'cinna';
-  img.alt = 'Cinnamoroll';
-  img.onload = () => document.querySelector('svg.cinna')?.replaceWith(img);
-  img.src = `https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&key=${DRIVE_CLAVE}`; // original, conserva el fondo transparente
+  const r = await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&key=${DRIVE_CLAVE}`);
+  const c = quitarFondo(await createImageBitmap(await r.blob()));
+  c.className = 'cinna';
+  c.setAttribute('aria-label', 'Cinnamoroll');
+  document.querySelector('svg.cinna')?.replaceWith(c);
+}
+
+// "Varita mágica": vuelve transparente el fondo claro y gris (blanco o cuadritos falsos) que toca
+// los bordes de la imagen. Lo de adentro del contorno (el cuerpo blanco) no se toca.
+function quitarFondo(bmp) {
+  const c = document.createElement('canvas');
+  const W = c.width = bmp.width, H = c.height = bmp.height;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(bmp, 0, 0);
+  const datos = ctx.getImageData(0, 0, W, H), px = datos.data;
+  const esFondo = i => {
+    const mn = Math.min(px[i], px[i + 1], px[i + 2]), mx = Math.max(px[i], px[i + 1], px[i + 2]);
+    return mn > 170 && mx - mn < 22; // claro y sin color
+  };
+  const visto = new Uint8Array(W * H), pila = [];
+  for (let x = 0; x < W; x++) pila.push(x, x + (H - 1) * W);
+  for (let y = 0; y < H; y++) pila.push(y * W, y * W + W - 1);
+  while (pila.length) {
+    const p = pila.pop();
+    if (visto[p]) continue;
+    visto[p] = 1;
+    if (!esFondo(p * 4)) continue;
+    px[p * 4 + 3] = 0;
+    const x = p % W;
+    if (x > 0) pila.push(p - 1);
+    if (x < W - 1) pila.push(p + 1);
+    if (p >= W) pila.push(p - W);
+    if (p < W * H - W) pila.push(p + W);
+  }
+  ctx.putImageData(datos, 0, 0);
+  return c;
 }
 
 async function cargarDrive() {
