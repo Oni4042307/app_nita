@@ -189,8 +189,9 @@ dialog::backdrop{background:#2a4a6688}
   <p class="logo titulo">Para Nita</p>
   <div class="nubecita"><p class="sub titulo">Mi luNita</p></div>
   <svg class="estela" aria-hidden="true">
-    <clipPath id="revela"><rect width="0" height="100%"/></clipPath>
-    <g class="humo" clip-path="url(#revela)"><path/><text text-anchor="middle">te amo</text></g>
+    <!-- la máscara es un trazo grueso que avanza por la ruta del avión y va descubriendo estela y texto -->
+    <mask id="revela" maskUnits="userSpaceOnUse"><path fill="none" stroke="#fff" stroke-width="76" stroke-dasharray="0 99999"/></mask>
+    <g class="humo" mask="url(#revela)"><path/><text text-anchor="middle">te amo</text></g>
   </svg>
   <div id="cabeza-cinna" aria-hidden="true"></div>
 </header>
@@ -442,40 +443,59 @@ document.getElementById('cabeza-cinna').append(document.querySelector('svg.cinna
 // Vuelo en bucle de 12 s: escribe "te amo" (0–4,5 s), baja y aterriza a la derecha (4,5–6 s),
 // se queda 3 s, despega (9–10,5 s) mientras la estela se desvanece, y cielo vacío hasta repetir
 const avion = document.getElementById('cabeza-cinna'), estela = document.querySelector('.estela');
-const humo = estela.querySelector('.humo'), revela = estela.querySelector('#revela rect');
+const humo = estela.querySelector('.humo'), revela = estela.querySelector('#revela path');
 const BANDA = 36, onda = x => BANDA + 6 * Math.sin(x / 38); // altura de la estela
 const suave = t => t < .5 ? 2 * t * t : 1 - (2 - 2 * t) ** 2 / 2;
 const mezcla = (a, b, t) => a + (b - a) * t;
-let anchoTrazado = 0, finEstela = 0;
-function trazar(W) { // línea ondulada con un hueco donde va "te amo"
+const COLA = 34; // la cola del avión (de donde sale la estela) está a esta altura desde su borde de arriba
+let anchoTrazado = 0, ruta = [], largos = [], pista = [0, 0];
+// Ruta de la cola: onda de lado a lado y luego una curva que baja hasta la pista (abajo a la derecha)
+function trazar(W, H) {
   anchoTrazado = W;
-  estela.setAttribute('viewBox', `0 0 ${W} ${cielo.clientHeight}`);
+  estela.setAttribute('viewBox', `0 0 ${W} ${H}`);
   const texto = humo.querySelector('text');
   texto.setAttribute('x', W / 2);
   texto.setAttribute('y', BANDA + 12);
-  const caja = texto.getBBox(), tramo = (a, b) => {
-    let d = `M${a} ${onda(a)}`;
-    for (let x = a + 6; x <= b; x += 6) d += `L${x} ${onda(x)}`;
-    return d;
-  };
-  finEstela = caja.x + caja.width + 36;
-  humo.querySelector('path').setAttribute('d', tramo(0, caja.x - 8) + tramo(caja.x + caja.width + 8, finEstela));
+  const caja = texto.getBBox();
+  pista = [W - 86, H - 74];
+  const xFin = W - 70, a = [xFin, onda(xFin)], c = [W + 10, onda(xFin) + 30], b = [pista[0], pista[1] + COLA];
+  ruta = [];
+  for (let x = -90; x < xFin; x += 4) ruta.push([x, onda(x)]);
+  for (let i = 0; i <= 30; i++) { // curva de bajada (Bézier cuadrática)
+    const t = i / 30, u = 1 - t;
+    ruta.push([u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]);
+  }
+  largos = [0];
+  for (let i = 1; i < ruta.length; i++) largos.push(largos[i - 1] + Math.hypot(ruta[i][0] - ruta[i - 1][0], ruta[i][1] - ruta[i - 1][1]));
+  // estela: la misma ruta pero con un hueco donde va "te amo"
+  const enHueco = ([x, y]) => y < BANDA + 20 && x > caja.x - 8 && x < caja.x + caja.width + 8;
+  let d = '', pluma = false;
+  for (const pt of ruta) {
+    if (enHueco(pt)) { pluma = false; continue; }
+    d += `${pluma ? 'L' : 'M'}${pt[0].toFixed(1)} ${pt[1].toFixed(1)}`;
+    pluma = true;
+  }
+  humo.querySelector('path').setAttribute('d', d);
+  revela.setAttribute('d', 'M' + ruta.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join('L'));
+}
+function enRuta(dist) { // punto y ángulo de la ruta a cierta distancia recorrida
+  let i = 1;
+  while (i < largos.length - 1 && largos[i] < dist) i++;
+  const [x0, y0] = ruta[i - 1], [x1, y1] = ruta[i];
+  const t = Math.min(1, Math.max(0, (dist - largos[i - 1]) / (largos[i] - largos[i - 1] || 1)));
+  return [mezcla(x0, x1, t), mezcla(y0, y1, t), Math.atan2(y1 - y0, x1 - x0) * 180 / Math.PI];
 }
 function volar(t) {
   const W = cielo.clientWidth, H = cielo.clientHeight;
-  if (W !== anchoTrazado) trazar(W);
-  const k = t % 12000;
-  const pista = [W - 86, H - 74]; // donde aterriza: abajo a la derecha
-  let x, y, giro;
-  if (k < 4500) {                       // escribe
-    x = mezcla(-90, finEstela, k / 4500);
-    y = onda(x) - 34;
-    giro = Math.cos(x / 38) * -6;
-  } else if (k < 6000) {                // baja a la pista
-    const e = suave((k - 4500) / 1500);
-    x = mezcla(finEstela, pista[0], e);
-    y = mezcla(onda(finEstela) - 34, pista[1], e);
-    giro = 12 * Math.sin(Math.PI * e);
+  if (W !== anchoTrazado) trazar(W, H);
+  const k = t % 12000, total = largos[largos.length - 1];
+  let x, y, giro, recorrido = total;
+  if (k < 6000) {                       // escribe "te amo" y baja a la pista dejando la estela
+    recorrido = total * k / 6000;
+    let cola;
+    [x, cola, giro] = enRuta(recorrido);
+    y = cola - COLA;
+    giro = Math.max(-35, Math.min(35, giro));
   } else if (k < 9000) {                // aterrizado, flotando suave
     [x, y] = pista;
     y += 3 * Math.sin((k - 6000) / 400);
@@ -491,7 +511,7 @@ function volar(t) {
   avion.style.left = x + 'px';
   avion.style.top = y + 'px';
   avion.style.rotate = giro + 'deg';
-  revela.setAttribute('width', k < 4500 ? Math.max(0, x + 10) : W);
+  revela.setAttribute('stroke-dasharray', `${recorrido} 99999`);
   humo.style.opacity = k < 9000 ? .9 : Math.max(0, .9 - (k - 9000) / 1000);
   requestAnimationFrame(volar);
 }
