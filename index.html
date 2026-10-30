@@ -20,12 +20,13 @@ main section:not([hidden]){animation:entrar .4s ease-out}
 .cielo{position:relative;overflow:hidden;padding:22px 16px 26px;text-align:center;border-radius:0 0 32px 32px;
   background:linear-gradient(170deg,#7cc0ea,#b6e2f8 60%,#d7effb);box-shadow:0 4px 0 var(--azul)}
 .cielo .logo{position:relative;z-index:1;margin:0;font-size:2.4rem;line-height:1.3}
-.cielo .sub{position:relative;z-index:1;margin:2px 0 0;color:#fff;font-weight:600;text-shadow:0 1px 2px #4a8fc488}
+.cielo .sub{position:relative;z-index:1;margin:2px 0 0;font-size:1.5rem;color:#fff;
+  text-shadow:2px 0 var(--azul-osc),-2px 0 var(--azul-osc),0 2px var(--azul-osc),0 -2px var(--azul-osc),2px 2px var(--azul-osc),-2px -2px var(--azul-osc),2px -2px var(--azul-osc),-2px 2px var(--azul-osc),3px 4px 0 var(--rosa-letra)}
 .nube{position:absolute;color:#fff;opacity:.85;animation:pasar linear infinite;pointer-events:none}
 @keyframes pasar{from{translate:-30vw 0}to{translate:130vw 0}}
 .brillo{position:absolute;color:#fff;animation:titilar 2s ease-in-out infinite;pointer-events:none}
 @keyframes titilar{50%{opacity:.2;scale:.6}}
-#cabeza-cinna{position:absolute;z-index:1;right:10px;bottom:6px;width:74px;animation:flotar 2.4s ease-in-out infinite}
+#cabeza-cinna{position:absolute;z-index:1;right:8px;bottom:8px;width:88px;animation:flotar 2.4s ease-in-out infinite}
 #cabeza-cinna>*{width:100%;height:auto;display:block}
 nav{position:sticky;top:0;z-index:1;display:flex;justify-content:center;gap:8px;padding:12px 8px;background:#eef8fed9;backdrop-filter:blur(6px)}
 nav button{padding:8px 16px;border:2px solid var(--azul);border-radius:999px;background:#fff;font:inherit;font-weight:600;font-size:1rem;color:var(--azul-osc);cursor:pointer;transition:background .2s,color .2s,scale .2s}
@@ -170,7 +171,7 @@ dialog::backdrop{background:#2a4a6688}
 </div>
 <header class="cielo">
   <p class="logo titulo">Para Nita</p>
-  <p class="sub" id="sub"></p>
+  <p class="sub titulo">Mi luNita</p>
   <div id="cabeza-cinna" aria-hidden="true"></div>
 </header>
 <nav>
@@ -389,7 +390,6 @@ function contar() {
     `${p(Math.floor(meses / 12), 'año', 'años')}, ${p(meses % 12, 'mes', 'meses')} y ${p(d, 'día', 'días')}`;
   document.getElementById('segundos').textContent =
     `o ${Math.floor((n - s) / 1000).toLocaleString('es')} segundos 💙`;
-  document.getElementById('sub').textContent = `☁ ${p(total, 'día', 'días')} juntos ☁`;
 }
 contar();
 setInterval(contar, 1000);
@@ -526,20 +526,21 @@ async function driveListar(carpeta, filtro) {
   return (await r.json()).files;
 }
 
-// Si en la carpeta principal hay una imagen llamada "cinnamoroll…", reemplaza al dibujo (inicio y encabezado)
+// Imágenes de Cinnamoroll en la carpeta principal (sin fondo) reemplazan al dibujo:
+// "Cinnamoroll encabezado…" va al encabezado y "cinnamoroll inicial…" a la pregunta del inicio
 async function cargarCinnamoroll() {
-  const [f] = await driveListar(DRIVE_CARPETA, "mimeType contains 'image/' and name contains 'cinnamoroll'");
-  if (!f) return;
-  const r = await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&key=${DRIVE_CLAVE}`);
-  const c = quitarFondo(await createImageBitmap(await r.blob()));
-  c.className = 'cinna';
-  c.setAttribute('aria-label', 'Cinnamoroll');
-  const copia = document.createElement('canvas');
-  copia.width = c.width;
-  copia.height = c.height;
-  copia.getContext('2d').drawImage(c, 0, 0);
-  document.getElementById('cabeza-cinna').replaceChildren(copia);
-  document.querySelector('#ventana svg.cinna')?.replaceWith(c);
+  const imgs = await driveListar(DRIVE_CARPETA, "mimeType contains 'image/' and name contains 'cinnamoroll'");
+  await Promise.all(imgs.map(async f => {
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&key=${DRIVE_CLAVE}`);
+    const c = quitarFondo(await createImageBitmap(await r.blob()));
+    c.setAttribute('aria-label', 'Cinnamoroll');
+    if (/encabezado/i.test(f.name)) {
+      document.getElementById('cabeza-cinna').replaceChildren(c);
+    } else {
+      c.className = 'cinna';
+      document.querySelector('#ventana svg.cinna')?.replaceWith(c);
+    }
+  }));
 }
 
 // "Varita mágica": vuelve transparente el fondo claro y gris (blanco o cuadritos falsos) que toca
