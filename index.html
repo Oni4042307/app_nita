@@ -93,7 +93,7 @@ dialog::backdrop{background:#2a4a6688}
   <div id="ventana" hidden>
     <div class="barra"><span>LOVE ☁</span><span><i></i><i></i><i></i></span></div>
     <div class="cuerpo">
-      <p id="pregunta">Do you still love me? 🥺</p>
+      <p id="pregunta">Do you still love me?</p>
       <!-- Cinnamoroll (fan art) abrazando un corazón -->
       <svg class="cinna" viewBox="0 0 200 175" aria-hidden="true">
         <g stroke="#9cc6e4" stroke-width="3" fill="#fff">
@@ -434,7 +434,18 @@ function quitarFondo(bmp) {
     if (p < W * H - W) pila.push(p + W);
   }
   ctx.putImageData(datos, 0, 0);
-  return c;
+  // recorta al dibujo para que quede centrado aunque la imagen tenga más espacio a un lado
+  let x0 = W, y0 = H, x1 = 0, y1 = 0;
+  for (let p = 0; p < W * H; p++) if (px[p * 4 + 3]) {
+    const x = p % W, y = (p - x) / W;
+    x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+  }
+  if (x1 < x0) return c;
+  const recorte = document.createElement('canvas');
+  recorte.width = x1 - x0 + 1;
+  recorte.height = y1 - y0 + 1;
+  recorte.getContext('2d').drawImage(c, -x0, -y0);
+  return recorte;
 }
 
 async function cargarDrive() {
