@@ -19,7 +19,7 @@ h1{text-align:center;color:var(--rosa);font-weight:500}
 .grande{font-size:4.5rem;text-align:center;color:var(--rosa);margin:24px 0 0}
 .centro{text-align:center}
 #citas h2{color:var(--rosa);font-weight:500;margin:28px 0 10px}
-#citas h2 small{font-size:.8rem;opacity:.6;color:var(--texto)}
+
 .album{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
 .album img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer}
 dialog{border:0;border-radius:12px;max-width:min(600px,92vw);padding:24px;color:inherit}
@@ -60,11 +60,10 @@ const CARTAS = [
 Puedes usar varias líneas.`},
 ];
 
-// Álbum por citas: cada cita tiene su carpeta dentro de "fotos"
-const CITAS = [
-  // {titulo: 'El día que nos hicimos novios', fecha: '4 sep 2026', carpeta: '00-novios',
-  //  fotos: [{archivo: 'foto1.jpg', texto: 'Aquí empezó todo'}]},
-];
+// Álbum: carpeta de Google Drive con una subcarpeta por cita (se ordenan por nombre: "01 Nos hicimos novios", "02 Primer mes"...)
+// El texto de cada foto es su "Descripción" en Drive
+const DRIVE_CARPETA = '1bfBzTVraj5zJXESwc57ofePtUybQEaMh'; // ID de la carpeta principal (lo que va después de /folders/ en el link)
+const DRIVE_CLAVE = 'AIzaSyCzEVuzj9P6EhPD7hwDVhsYKPEGUc-XFfQ';   // clave de API de Google
 // ✏️ ====================== ✏️
 
 // Paneles
@@ -115,27 +114,48 @@ setInterval(contar, 1000);
 // Álbum
 const dlgFoto = document.getElementById('foto');
 dlgFoto.onclick = () => dlgFoto.close();
-for (const c of CITAS) {
-  const h = document.createElement('h2');
-  h.innerHTML = '<span></span> <small></small>';
-  h.querySelector('span').textContent = c.titulo;
-  h.querySelector('small').textContent = c.fecha || '';
-  const grid = document.createElement('div');
-  grid.className = 'album';
-  for (const f of c.fotos) {
-    const img = document.createElement('img');
-    img.src = `fotos/${c.carpeta}/${f.archivo}`;
-    img.alt = f.texto || '';
-    img.loading = 'lazy';
-    img.onclick = () => {
-      dlgFoto.querySelector('img').src = img.src;
-      dlgFoto.querySelector('p').textContent = f.texto || '';
-      dlgFoto.showModal();
-    };
-    grid.append(img);
-  }
-  document.getElementById('citas').append(h, grid);
+const citas = document.getElementById('citas');
+const foto = (id, ancho) => `https://drive.google.com/thumbnail?id=${id}&sz=w${ancho}`;
+
+async function driveListar(carpeta, filtro) {
+  const q = encodeURIComponent(`'${carpeta}' in parents and trashed = false and ${filtro}`);
+  const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&orderBy=name&pageSize=1000` +
+    `&fields=files(id,name,description)&key=${DRIVE_CLAVE}`);
+  if (!r.ok) throw new Error(`Drive respondió ${r.status}`);
+  return (await r.json()).files;
 }
+
+async function cargarAlbum() {
+  if (!DRIVE_CARPETA) return;
+  citas.textContent = 'Cargando fotos…';
+  try {
+    const carpetas = await driveListar(DRIVE_CARPETA, "mimeType = 'application/vnd.google-apps.folder'");
+    const fotos = await Promise.all(carpetas.map(c => driveListar(c.id, "mimeType contains 'image/'")));
+    citas.textContent = '';
+    carpetas.forEach((c, i) => {
+      const h = document.createElement('h2');
+      h.textContent = c.name.replace(/^\d+\s*[-.·]?\s*/, ''); // quita el número de orden
+      const grid = document.createElement('div');
+      grid.className = 'album';
+      for (const f of fotos[i]) {
+        const img = document.createElement('img');
+        img.src = foto(f.id, 400);
+        img.alt = f.description || '';
+        img.loading = 'lazy';
+        img.onclick = () => {
+          dlgFoto.querySelector('img').src = foto(f.id, 2000);
+          dlgFoto.querySelector('p').textContent = f.description || '';
+          dlgFoto.showModal();
+        };
+        grid.append(img);
+      }
+      citas.append(h, grid);
+    });
+  } catch (e) {
+    citas.textContent = 'No pude cargar las fotos de Drive 😢 (' + e.message + ')';
+  }
+}
+cargarAlbum();
 </script>
 </body>
 </html>
