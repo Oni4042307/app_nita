@@ -439,11 +439,14 @@ for (let i = 0; i < 18; i++) { // estrellas
 }
 document.getElementById('cabeza-cinna').append(document.querySelector('svg.cinna').cloneNode(true));
 
-// Vuelo: cruza en 6 s dejando la estela, la deja 3 s, se desvanece y repite cada 14 s
+// Vuelo en bucle de 12 s: escribe "te amo" (0–4,5 s), baja y aterriza a la derecha (4,5–6 s),
+// se queda 3 s, despega (9–10,5 s) mientras la estela se desvanece, y cielo vacío hasta repetir
 const avion = document.getElementById('cabeza-cinna'), estela = document.querySelector('.estela');
 const humo = estela.querySelector('.humo'), revela = estela.querySelector('#revela rect');
 const BANDA = 36, onda = x => BANDA + 6 * Math.sin(x / 38); // altura de la estela
-let anchoTrazado = 0;
+const suave = t => t < .5 ? 2 * t * t : 1 - (2 - 2 * t) ** 2 / 2;
+const mezcla = (a, b, t) => a + (b - a) * t;
+let anchoTrazado = 0, finEstela = 0;
 function trazar(W) { // línea ondulada con un hueco donde va "te amo"
   anchoTrazado = W;
   estela.setAttribute('viewBox', `0 0 ${W} ${cielo.clientHeight}`);
@@ -455,17 +458,40 @@ function trazar(W) { // línea ondulada con un hueco donde va "te amo"
     for (let x = a + 6; x <= b; x += 6) d += `L${x} ${onda(x)}`;
     return d;
   };
-  humo.querySelector('path').setAttribute('d', tramo(0, caja.x - 8) + tramo(caja.x + caja.width + 8, W));
+  finEstela = caja.x + caja.width + 36;
+  humo.querySelector('path').setAttribute('d', tramo(0, caja.x - 8) + tramo(caja.x + caja.width + 8, finEstela));
 }
 function volar(t) {
-  const W = cielo.clientWidth;
+  const W = cielo.clientWidth, H = cielo.clientHeight;
   if (W !== anchoTrazado) trazar(W);
-  const k = t % 14000, avance = Math.min(1, k / 6000);
-  const x = -90 + (W + 180) * avance; // borde izquierdo (la cola) del avión
+  const k = t % 12000;
+  const pista = [W - 86, H - 74]; // donde aterriza: abajo a la derecha
+  let x, y, giro;
+  if (k < 4500) {                       // escribe
+    x = mezcla(-90, finEstela, k / 4500);
+    y = onda(x) - 34;
+    giro = Math.cos(x / 38) * -6;
+  } else if (k < 6000) {                // baja a la pista
+    const e = suave((k - 4500) / 1500);
+    x = mezcla(finEstela, pista[0], e);
+    y = mezcla(onda(finEstela) - 34, pista[1], e);
+    giro = 12 * Math.sin(Math.PI * e);
+  } else if (k < 9000) {                // aterrizado, flotando suave
+    [x, y] = pista;
+    y += 3 * Math.sin((k - 6000) / 400);
+    giro = 0;
+  } else if (k < 10500) {               // despega y se va por la derecha
+    const e = suave((k - 9000) / 1500);
+    x = mezcla(pista[0], W + 100, e);
+    y = mezcla(pista[1], -60, e);
+    giro = -14 * Math.sin(Math.PI * e);
+  } else {                              // fuera de la pantalla
+    x = -100; y = 0; giro = 0;
+  }
   avion.style.left = x + 'px';
-  avion.style.top = onda(x) - 34 + 'px';
-  avion.style.rotate = Math.cos(x / 38) * -6 + 'deg'; // se inclina con la onda
-  revela.setAttribute('width', Math.max(0, x + 10));
+  avion.style.top = y + 'px';
+  avion.style.rotate = giro + 'deg';
+  revela.setAttribute('width', k < 4500 ? Math.max(0, x + 10) : W);
   humo.style.opacity = k < 9000 ? .9 : Math.max(0, .9 - (k - 9000) / 1000);
   requestAnimationFrame(volar);
 }
