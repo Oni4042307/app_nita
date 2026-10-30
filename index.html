@@ -14,8 +14,10 @@ nav button[aria-selected=true]{border-color:var(--rosa);color:var(--rosa);font-w
 main{max-width:720px;margin:auto;padding:16px}
 h1{text-align:center;color:var(--rosa);font-weight:500}
 .cartas{display:grid;gap:12px}
-.carta{padding:18px;border:0;border-radius:12px;background:#fff;box-shadow:0 2px 8px #0001;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.carta{display:flex;gap:14px;align-items:center;padding:12px;border:0;border-radius:12px;background:#fff;box-shadow:0 2px 8px #0001;text-align:left;font:inherit;color:inherit;cursor:pointer}
 .carta small{display:block;opacity:.6;margin-top:4px}
+.mini{width:64px;height:64px;flex:none;border-radius:8px;overflow:hidden;background:#f3d6df}
+.mini img{width:100%;height:100%;object-fit:cover;display:block}
 .grande{font-size:4.5rem;text-align:center;color:var(--rosa);margin:24px 0 0}
 .centro{text-align:center}
 #citas h2{color:var(--rosa);font-weight:500;margin:28px 0 10px}
@@ -26,12 +28,13 @@ h1{text-align:center;color:var(--rosa);font-weight:500}
 .album .video::after{content:'▶';position:absolute;inset:0;display:grid;place-items:center;font-size:2.2rem;color:#fff;text-shadow:0 0 10px #000a}
 dialog{border:0;border-radius:12px;max-width:min(600px,92vw);padding:24px;color:inherit}
 dialog::backdrop{background:#0008}
-#carta p{white-space:pre-line;line-height:1.7}
+#carta{max-width:min(800px,92vw)}
+#carta .marco{margin-bottom:12px;border-radius:4px;box-shadow:0 2px 8px #0002}
 #carta button{background:var(--rosa);color:#fff;border:0;border-radius:8px;padding:8px 16px;font:inherit;cursor:pointer}
 #foto{padding:0;background:none}
-#marco{position:relative;border-radius:12px;overflow:hidden}
-#marco img{position:absolute;left:50%;top:50%}
-#marco iframe{display:block;width:100%;height:100%;border:0}
+.marco{position:relative;border-radius:12px;overflow:hidden}
+.marco img{position:absolute;left:50%;top:50%}
+.marco iframe{display:block;width:100%;height:100%;border:0}
 #foto p{color:#fff;text-align:center}
 </style>
 </head>
@@ -52,8 +55,8 @@ dialog::backdrop{background:#0008}
   <section id="album" hidden><h1>Nuestro álbum</h1><div id="citas"></div></section>
 </main>
 
-<dialog id="carta"><h2></h2><p></p><form method="dialog"><button>Cerrar</button></form></dialog>
-<dialog id="foto"><div id="marco"><img alt=""><iframe allow="autoplay; fullscreen" allowfullscreen hidden></iframe></div><p></p></dialog>
+<dialog id="carta"><h2></h2><div class="paginas"></div><form method="dialog"><button>Cerrar</button></form></dialog>
+<dialog id="foto"><div class="marco" id="marco"><img alt=""><iframe allow="autoplay; fullscreen" allowfullscreen hidden></iframe></div><p></p></dialog>
 
 <script>
 // ✏️ ===== EDITA AQUÍ ===== ✏️
@@ -62,7 +65,8 @@ const INICIO = '2026-09-04T00:00-05:00'; // fecha y hora en que empezaron (hora 
 // Todo sale de una carpeta de Google Drive:
 // - Álbum: una subcarpeta por cita (se ordenan por nombre: "01 Nos hicimos novios", "02 Primer mes"...).
 //   El texto de cada foto es su "Descripción" en Drive.
-// - Cartas: subcarpeta "Cartas" con un Google Doc por carta (el nombre del doc es el título).
+// - Cartas: subcarpeta "Cartas". Cada foto es una carta; si tiene varias páginas, una subcarpeta con una foto por página.
+//   El nombre de la foto o subcarpeta es el título ("01 Mi primera carta").
 const DRIVE_CARPETA = '1bfBzTVraj5zJXESwc57ofePtUybQEaMh'; // ID de la carpeta principal (lo que va después de /folders/ en el link)
 const DRIVE_CLAVE = 'AIzaSyCzEVuzj9P6EhPD7hwDVhsYKPEGUc-XFfQ';   // clave de API de Google
 // ✏️ ====================== ✏️
@@ -80,25 +84,44 @@ const listaCartas = document.querySelector('.cartas');
 const sinNumero = nombre => nombre.replace(/^\d+\s*[-.·]?\s*/, ''); // "01 Título" → "Título"
 
 async function cargarCartas(carpeta) {
-  const docs = await driveListar(carpeta, "mimeType = 'application/vnd.google-apps.document'");
-  listaCartas.textContent = docs.length ? '' : 'Todavía no hay cartas 💌';
-  for (const d of docs) {
+  const items = await driveListar(carpeta, "(mimeType contains 'image/' or mimeType = 'application/vnd.google-apps.folder')");
+  const paginas = await Promise.all(items.map(c =>
+    c.mimeType.startsWith('image/') ? [c] : driveListar(c.id, "mimeType contains 'image/'")));
+  listaCartas.textContent = '';
+  items.forEach((c, i) => {
+    const pags = paginas[i];
+    if (!pags.length) return;
+    const titulo = sinNumero(c.name.replace(/\.\w+$/, ''));
     const b = document.createElement('button');
     b.className = 'carta';
-    b.innerHTML = '<strong></strong><small></small>';
-    b.querySelector('strong').textContent = sinNumero(d.name);
+    b.innerHTML = '<span class="mini"><img alt="" loading="lazy"></span><span><strong></strong><small></small></span>';
+    enderezar(b.querySelector('img'), pags[0]);
+    b.querySelector('img').src = foto(pags[0].id, 200);
+    b.querySelector('strong').textContent = titulo;
     b.querySelector('small').textContent =
-      new Date(d.createdTime).toLocaleDateString('es-CO', {day: 'numeric', month: 'long', year: 'numeric'});
-    b.onclick = async () => {
-      const texto = dlgCarta.querySelector('p');
-      dlgCarta.querySelector('h2').textContent = sinNumero(d.name);
-      texto.textContent = 'Abriendo…';
-      dlgCarta.showModal();
-      const r = await fetch(`https://www.googleapis.com/drive/v3/files/${d.id}/export?mimeType=text/plain&key=${DRIVE_CLAVE}`);
-      texto.textContent = r.ok ? (await r.text()).trim() : 'No pude abrir la carta 😢';
-    };
+      new Date(c.createdTime).toLocaleDateString('es-CO', {day: 'numeric', month: 'long', year: 'numeric'});
+    b.onclick = () => abrirCarta(titulo, pags);
     listaCartas.append(b);
+  });
+  if (!listaCartas.children.length) listaCartas.textContent = 'Todavía no hay cartas 💌';
+}
+
+function abrirCarta(titulo, pags) {
+  dlgCarta.querySelector('h2').textContent = titulo;
+  const cont = dlgCarta.querySelector('.paginas');
+  cont.textContent = '';
+  const ancho = Math.min(800, innerWidth * .92) - 48; // ancho del diálogo menos su padding
+  for (const f of pags) {
+    const marco = document.createElement('div');
+    marco.className = 'marco';
+    const img = document.createElement('img');
+    encajar(marco, img, f, ancho, Infinity);
+    img.src = foto(f.id, 1600);
+    marco.append(img);
+    cont.append(marco);
   }
+  dlgCarta.showModal();
+  dlgCarta.scrollTop = 0;
 }
 
 // Contador
@@ -132,25 +155,47 @@ const citas = document.getElementById('citas');
 const foto = (id, ancho) => `https://drive.google.com/thumbnail?id=${id}&sz=w${ancho}`;
 const fecha = f => f.name.replace(/^\D+/, ''); // IMG_20260904_... / VID_20260904_... → orden cronológico
 
-// Drive entrega las miniaturas sin girar; rotation = cuartos de vuelta que faltan
+// rotation = cuartos de vuelta que le faltan a la foto original. Drive a veces entrega la imagen
+// ya girada (tamaños grandes) y a veces no (miniaturas), así que se decide al cargarla.
 const giro = f => (f.imageMediaMetadata?.rotation || 0) * 90;
+function giroReal(img, f) {
+  const g = giro(f), {width: w = 1, height: h = 1} = f.imageMediaMetadata || {};
+  if (g % 180 === 0) return g;
+  return (img.naturalWidth > img.naturalHeight) === (w > h) ? g : 0; // misma forma que el original → falta girar
+}
+function enderezar(img, f) { // para miniaturas cuadradas
+  img.onload = () => img.style.transform = `rotate(${giroReal(img, f)}deg)`;
+}
+
+// Escala la foto para que quepa en maxW×maxH; el marco toma el tamaño ya enderezado
+function encajar(marco, img, f, maxW, maxH) {
+  const {width: w = 1, height: h = 1} = f.imageMediaMetadata || {};
+  const [vw, vh] = giro(f) % 180 ? [h, w] : [w, h];
+  const s = Math.min(maxW / vw, maxH / vh);
+  marco.style.width = vw * s + 'px';
+  marco.style.height = vh * s + 'px';
+  const poner = r => {
+    img.style.width = (r % 180 ? vh : vw) * s + 'px';
+    img.style.height = (r % 180 ? vw : vh) * s + 'px';
+    img.style.transform = `translate(-50%, -50%) rotate(${r}deg)`;
+  };
+  poner(0);
+  img.onload = () => poner(giroReal(img, f));
+}
 
 function abrir(f) {
   const video = f.mimeType.startsWith('video/');
-  const {width: w = 16, height: h = 9} = (video ? f.videoMediaMetadata : f.imageMediaMetadata) || {};
-  const g = giro(f), [vw, vh] = g % 180 ? [h, w] : [w, h]; // tamaño ya girado
-  const s = Math.min(innerWidth * .92 / vw, innerHeight * .8 / vh);
   const marco = document.getElementById('marco');
-  marco.style.width = vw * s + 'px';
-  marco.style.height = vh * s + 'px';
   verImg.hidden = video;
   verVideo.hidden = !video;
   if (video) {
+    const {width: w = 16, height: h = 9} = f.videoMediaMetadata || {};
+    const s = Math.min(innerWidth * .92 / w, innerHeight * .8 / h);
+    marco.style.width = w * s + 'px';
+    marco.style.height = h * s + 'px';
     verVideo.src = `https://drive.google.com/file/d/${f.id}/preview`;
   } else {
-    verImg.style.width = w * s + 'px';
-    verImg.style.height = h * s + 'px';
-    verImg.style.transform = `translate(-50%, -50%) rotate(${g}deg)`;
+    encajar(marco, verImg, f, innerWidth * .92, innerHeight * .8);
     verImg.src = foto(f.id, 2000);
   }
   dlgFoto.querySelector('p').textContent = f.description || '';
@@ -186,10 +231,10 @@ async function cargarDrive() {
         const b = document.createElement('button');
         if (f.mimeType.startsWith('video/')) b.className = 'video';
         const img = document.createElement('img');
+        enderezar(img, f);
         img.src = foto(f.id, 400);
         img.alt = f.description || '';
         img.loading = 'lazy';
-        img.style.transform = `rotate(${giro(f)}deg)`;
         b.append(img);
         b.onclick = () => abrir(f);
         grid.append(b);
