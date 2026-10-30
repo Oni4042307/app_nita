@@ -4,19 +4,35 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Para ti ❤</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Pacifico&display=swap">
 <style>
 /* Paleta Cinnamoroll */
-:root{--cielo:#dff2fc;--azul:#8ccbee;--azul-osc:#4a8fc4;--rosado:#f7a8c4;--fondo:#eef8fe;--texto:#3b5f80}
+:root{--cielo:#dff2fc;--azul:#8ccbee;--azul-osc:#4a8fc4;--rosado:#f7a8c4;--rosa-letra:#f48fb8;--fondo:#eef8fe;--texto:#3b5f80}
 *{box-sizing:border-box}
-body{margin:0;font-family:system-ui,sans-serif;background:var(--fondo) repeating-conic-gradient(#e6f4fd 0 25%,transparent 0 50%) 0 0/28px 28px;color:var(--texto)}
-h1,h2,nav,.grande,.carta strong,#carta button{font-family:'Pixelify Sans',system-ui,sans-serif}
-nav{position:sticky;top:0;z-index:1;display:flex;background:#fff;border-bottom:3px solid var(--azul)}
-nav button{flex:1;padding:14px;border:0;border-bottom:3px solid transparent;margin-bottom:-3px;background:none;font:inherit;font-size:1.05rem;color:var(--azul-osc);cursor:pointer}
-nav button[aria-selected=true]{border-color:var(--azul-osc);background:var(--cielo)}
-main{max-width:720px;margin:auto;padding:16px}
-h1{text-align:center;color:var(--azul-osc);font-weight:500}
-h1::after{content:' ☁';color:var(--azul)}
+body{margin:0;font-family:'Fredoka',system-ui,sans-serif;background:var(--fondo) repeating-conic-gradient(#e6f4fd 0 25%,transparent 0 50%) 0 0/28px 28px;color:var(--texto)}
+/* letra tipo logo de Cinnamoroll: rosada con borde blanco y sombra celeste */
+h1,.titulo,#citas summary span,.carta strong,#carta h2,#pregunta,.grande{font-family:'Pacifico',cursive;font-weight:400;color:var(--rosa-letra);
+  text-shadow:2px 0 #fff,-2px 0 #fff,0 2px #fff,0 -2px #fff,2px 2px #fff,-2px -2px #fff,2px -2px #fff,-2px 2px #fff,3px 4px 0 var(--azul)}
+main section:not([hidden]){animation:entrar .4s ease-out}
+@keyframes entrar{from{opacity:0;translate:0 14px}}
+
+/* Encabezado: cielo con nubes que pasan y Cinnamoroll flotando */
+.cielo{position:relative;overflow:hidden;padding:22px 16px 26px;text-align:center;border-radius:0 0 32px 32px;
+  background:linear-gradient(170deg,#7cc0ea,#b6e2f8 60%,#d7effb);box-shadow:0 4px 0 var(--azul)}
+.cielo .logo{position:relative;z-index:1;margin:0;font-size:2.4rem;line-height:1.3}
+.cielo .sub{position:relative;z-index:1;margin:2px 0 0;color:#fff;font-weight:600;text-shadow:0 1px 2px #4a8fc488}
+.nube{position:absolute;color:#fff;opacity:.85;animation:pasar linear infinite;pointer-events:none}
+@keyframes pasar{from{translate:-30vw 0}to{translate:130vw 0}}
+.brillo{position:absolute;color:#fff;animation:titilar 2s ease-in-out infinite;pointer-events:none}
+@keyframes titilar{50%{opacity:.2;scale:.6}}
+#cabeza-cinna{position:absolute;z-index:1;right:10px;bottom:6px;width:74px;animation:flotar 2.4s ease-in-out infinite}
+#cabeza-cinna>*{width:100%;height:auto;display:block}
+nav{position:sticky;top:0;z-index:1;display:flex;justify-content:center;gap:8px;padding:12px 8px;background:#eef8fed9;backdrop-filter:blur(6px)}
+nav button{padding:8px 16px;border:2px solid var(--azul);border-radius:999px;background:#fff;font:inherit;font-weight:600;font-size:1rem;color:var(--azul-osc);cursor:pointer;transition:background .2s,color .2s,scale .2s}
+nav button[aria-selected=true]{background:var(--rosado);border-color:var(--rosa-letra);color:#fff;scale:1.06;animation:rebote .4s}
+@keyframes rebote{40%{scale:1.15}}
+main{max-width:720px;margin:auto;padding:8px 16px 24px}
+h1{text-align:center;font-size:2rem}
 .cartas{display:grid;gap:12px}
 .carta{display:flex;gap:14px;align-items:center;padding:12px;border:3px solid var(--azul);border-radius:6px;background:#fff;box-shadow:4px 4px 0 var(--azul);text-align:left;font:inherit;color:inherit;cursor:pointer}
 .carta strong{color:var(--azul-osc);font-weight:500;font-size:1.1rem}
@@ -26,8 +42,14 @@ h1::after{content:' ☁';color:var(--azul)}
 .grande{font-size:4.5rem;text-align:center;color:var(--azul-osc);margin:24px 0 0}
 .centro{text-align:center}
 #contador .centro{font-size:1.1rem}
-#citas h2{color:var(--azul-osc);font-weight:500;margin:28px 0 10px}
-#citas h2::before{content:'♡ ';color:var(--rosado)}
+#citas details{margin-bottom:14px;padding:4px 14px;border:3px solid var(--azul);border-radius:6px;background:#fff;box-shadow:4px 4px 0 var(--azul)}
+#citas summary{display:flex;align-items:center;gap:8px;padding:10px 0;list-style:none;cursor:pointer;font-size:1.3rem;color:var(--azul-osc)}
+#citas summary::-webkit-details-marker{display:none}
+#citas summary::before{content:'♡';color:var(--rosado)}
+#citas summary small{margin-left:auto;font-size:.9rem;opacity:.7}
+#citas summary::after{content:'▸';transition:rotate .2s}
+#citas details[open] summary::after{rotate:90deg}
+#citas details .album{margin-bottom:14px}
 .album{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
 .album button{position:relative;padding:0;border:3px solid #fff;border-radius:6px;overflow:hidden;background:var(--cielo);box-shadow:0 0 0 2px var(--azul);cursor:pointer}
 .album img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
@@ -35,13 +57,11 @@ h1::after{content:' ☁';color:var(--azul)}
 dialog{border:3px solid var(--azul);border-radius:6px;max-width:min(600px,92vw);padding:24px;color:inherit}
 dialog::backdrop{background:#2a4a6688}
 #carta{max-width:min(800px,92vw);box-shadow:6px 6px 0 var(--azul)}
-#carta h2{color:var(--azul-osc);font-weight:500}
 #carta .marco{margin-bottom:12px;border-radius:4px;box-shadow:0 2px 8px #0002}
-#carta button{background:var(--rosado);color:#fff;border:3px solid var(--azul-osc);border-radius:4px;padding:8px 20px;font-size:1rem;box-shadow:3px 3px 0 var(--azul-osc);cursor:pointer}
-#foto{border:0}
+#carta button{background:var(--rosado);color:#fff;border:3px solid var(--azul-osc);border-radius:999px;padding:8px 22px;font:inherit;font-weight:600;box-shadow:3px 3px 0 var(--azul-osc);cursor:pointer}
 /* Inicio */
 #inicio{position:fixed;inset:0;z-index:2;display:grid;place-items:center;overflow:hidden;padding:16px;text-align:center;
-  background:linear-gradient(#e9f7ff,#fdf0f6);font-family:'Pixelify Sans',system-ui,sans-serif;color:var(--azul-osc);
+  background:linear-gradient(#e9f7ff,#fdf0f6);color:var(--azul-osc);
   user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:opacity .6s}
 #inicio.saliendo{opacity:0}
 .flota{position:absolute;bottom:-40px;font-size:22px;opacity:.7;animation:subir linear infinite;pointer-events:none}
@@ -66,26 +86,40 @@ dialog::backdrop{background:#2a4a6688}
 .barra{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--azul);color:#fff;font-size:15px}
 .barra i{display:inline-block;width:12px;height:12px;margin-left:4px;background:#fff;border-radius:2px}
 .cuerpo{padding:18px 14px 20px;background:repeating-conic-gradient(#eef8fe 0 25%,#fff 0 50%) 0 0/18px 18px}
-#pregunta{font-size:22px;margin:0 0 6px;min-height:2.6em;display:grid;place-items:center}
+#pregunta{font-size:26px;margin:0 0 6px;min-height:2.4em;display:grid;place-items:center}
+#paso1 .titulo{font-size:1.6rem;margin:0}
 .cinna{width:170px;display:block;margin:0 auto 10px;animation:flotar 2.4s ease-in-out infinite}
 @keyframes flotar{50%{translate:0 -6px}}
-#inicio .opciones button{font:inherit;font-size:18px;padding:8px 26px;margin:0 8px;border:3px solid var(--azul-osc);border-radius:4px;cursor:pointer;box-shadow:3px 3px 0 var(--azul-osc)}
+#inicio .opciones button{font:inherit;font-weight:600;font-size:18px;padding:8px 26px;margin:0 8px;border:3px solid var(--azul-osc);border-radius:999px;cursor:pointer;box-shadow:3px 3px 0 var(--azul-osc)}
 #si{background:var(--rosado);color:#fff}
 #no{background:#fff;color:var(--azul-osc);transition:left .2s,top .2s}
 .corazon{position:fixed;font-size:22px;pointer-events:none;animation:estallar 1.6s ease-out forwards}
 @keyframes estallar{from{transform:translate(-50%,-50%) scale(.4)}to{transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(1.3);opacity:0}}
-#foto{padding:0;background:none}
 .marco{position:relative;border-radius:12px;overflow:hidden}
 .marco img{position:absolute;left:50%;top:50%}
 .marco iframe{display:block;width:100%;height:100%;border:0}
-#foto p{color:#fff;text-align:center}
+/* Galería a pantalla completa: se desliza con el dedo (scroll-snap) */
+#foto{width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;background:none;overflow:hidden}
+#foto::backdrop{background:#16304af2}
+.tira{display:flex;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.tira::-webkit-scrollbar{display:none}
+.slide{flex:0 0 100%;height:100%;scroll-snap-align:center;scroll-snap-stop:always;display:grid;place-content:center;justify-items:center;gap:10px}
+.slide p{margin:0;max-width:90vw;color:#fff;text-align:center}
+.marco img.portada{left:0;top:0;width:100%;height:100%;object-fit:cover}
+.play{position:absolute;inset:0;border:0;background:none;color:#fff;font-size:3.5rem;text-shadow:0 0 12px #000a;cursor:pointer}
+.gal{position:fixed;z-index:1;border:0;border-radius:999px;background:#ffffffd9;color:var(--azul-osc);font:inherit;font-weight:600;cursor:pointer}
+.gal.cerrar{top:12px;right:12px;width:40px;height:40px;font-size:1.2rem}
+.gal.ant,.gal.sig{top:50%;translate:0 -50%;width:44px;height:44px;font-size:1.6rem}
+.gal.ant{left:10px}.gal.sig{right:10px}
+.gal.cuenta{top:16px;left:50%;translate:-50% 0;padding:4px 12px;font-size:.9rem;cursor:default}
+@media (pointer:coarse){.gal.ant,.gal.sig{display:none}} /* en el celular se desliza con el dedo */
 </style>
 </head>
 <body>
 <div id="inicio">
   <div id="paso1">
     <div class="sobre"><div class="solapa"></div><span class="sello">♥</span></div>
-    <p>♡ A Little Surprise ♡</p>
+    <p class="titulo">A Little Surprise</p>
     <button id="arco" aria-label="Bow">🏹</button>
     <div class="carga"><i></i></div>
     <p class="pista">Hold to draw the bow – release to shoot ♡</p>
@@ -119,6 +153,11 @@ dialog::backdrop{background:#2a4a6688}
     </div>
   </div>
 </div>
+<header class="cielo">
+  <p class="logo titulo">Para Nita</p>
+  <p class="sub" id="sub"></p>
+  <div id="cabeza-cinna" aria-hidden="true"></div>
+</header>
 <nav>
   <button data-panel="cartas" aria-selected="true">💌 Cartas</button>
   <button data-panel="contador" aria-selected="false">⏳ Contador</button>
@@ -136,7 +175,13 @@ dialog::backdrop{background:#2a4a6688}
 </main>
 
 <dialog id="carta"><h2></h2><div class="paginas"></div><form method="dialog"><button>Cerrar</button></form></dialog>
-<dialog id="foto"><div class="marco" id="marco"><img alt=""><iframe allow="autoplay; fullscreen" allowfullscreen hidden></iframe></div><p></p></dialog>
+<dialog id="foto">
+  <div class="tira"></div>
+  <span class="gal cuenta"></span>
+  <button class="gal cerrar" aria-label="Cerrar">✕</button>
+  <button class="gal ant" aria-label="Anterior">‹</button>
+  <button class="gal sig" aria-label="Siguiente">›</button>
+</dialog>
 
 <script>
 // ✏️ ===== EDITA AQUÍ ===== ✏️
@@ -326,15 +371,102 @@ function contar() {
     `${p(Math.floor(meses / 12), 'año', 'años')}, ${p(meses % 12, 'mes', 'meses')} y ${p(d, 'día', 'días')}`;
   document.getElementById('segundos').textContent =
     `o ${Math.floor((n - s) / 1000).toLocaleString('es')} segundos 💙`;
+  document.getElementById('sub').textContent = `☁ ${p(total, 'día', 'días')} juntos ☁`;
 }
 contar();
 setInterval(contar, 1000);
 
-// Álbum
+// Encabezado: nubes que pasan, brillitos y Cinnamoroll (el dibujo hasta que llegue la imagen de Drive)
+const cielo = document.querySelector('.cielo');
+for (let i = 0; i < 5; i++) {
+  const n = document.createElement('span');
+  n.className = 'nube';
+  n.textContent = '☁';
+  n.style.top = 5 + Math.random() * 70 + '%';
+  n.style.fontSize = 22 + Math.random() * 30 + 'px';
+  n.style.animationDuration = 14 + Math.random() * 14 + 's';
+  n.style.animationDelay = -Math.random() * 28 + 's';
+  cielo.prepend(n);
+}
+for (let i = 0; i < 6; i++) {
+  const b = document.createElement('span');
+  b.className = 'brillo';
+  b.textContent = '✦';
+  b.style.left = 5 + Math.random() * 90 + '%';
+  b.style.top = 5 + Math.random() * 80 + '%';
+  b.style.fontSize = 8 + Math.random() * 8 + 'px';
+  b.style.animationDelay = -Math.random() * 2 + 's';
+  cielo.prepend(b);
+}
+document.getElementById('cabeza-cinna').append(document.querySelector('svg.cinna').cloneNode(true));
+
+// Álbum: galería a pantalla completa que se desliza
 const dlgFoto = document.getElementById('foto');
-const [verImg, verVideo] = dlgFoto.querySelectorAll('img, iframe');
-dlgFoto.onclick = () => dlgFoto.close();
-dlgFoto.onclose = () => verVideo.src = 'about:blank'; // detiene el video
+const tira = dlgFoto.querySelector('.tira');
+const cuenta = dlgFoto.querySelector('.cuenta');
+const pasar = dir => tira.scrollBy({left: dir * tira.clientWidth, behavior: 'smooth'});
+dlgFoto.querySelector('.cerrar').onclick = () => dlgFoto.close();
+dlgFoto.querySelector('.ant').onclick = () => pasar(-1);
+dlgFoto.querySelector('.sig').onclick = () => pasar(1);
+dlgFoto.onkeydown = e => { if (e.key === 'ArrowLeft') pasar(-1); if (e.key === 'ArrowRight') pasar(1); };
+tira.onclick = e => { if (e.target.classList.contains('slide')) dlgFoto.close(); }; // tocar fuera de la foto cierra
+dlgFoto.onclose = () => tira.textContent = ''; // también detiene videos
+
+// La diapositiva visible: mejora la foto a nítida, actualiza "3 / 39" y detiene videos que quedaron atrás
+const visible = new IntersectionObserver(entradas => {
+  for (const {target: s, isIntersecting} of entradas) {
+    if (!isIntersecting) { if (s.querySelector('iframe')) portadaVideo(s.marco, s.f); continue; }
+    cuenta.textContent = `${[...tira.children].indexOf(s) + 1} / ${tira.children.length}`;
+    const img = s.querySelector('img:not(.portada)');
+    if (img && !s.nitida) {
+      s.nitida = true;
+      const n = new Image();
+      n.onload = () => img.src = n.src;
+      n.src = foto(s.f.id, 1600);
+    }
+  }
+}, {root: tira, threshold: .6});
+
+function portadaVideo(marco, f) {
+  marco.innerHTML = '<img class="portada" alt=""><button class="play" aria-label="Reproducir">▶</button>';
+  marco.querySelector('img').src = foto(f.id, 400);
+  marco.querySelector('button').onclick = () =>
+    marco.innerHTML = `<iframe src="https://drive.google.com/file/d/${f.id}/preview" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+}
+
+function diapositiva(f) {
+  const s = document.createElement('div');
+  s.className = 'slide';
+  s.f = f;
+  const marco = s.marco = document.createElement('div');
+  marco.className = 'marco';
+  if (f.mimeType.startsWith('video/')) {
+    const {width: w = 16, height: h = 9} = f.videoMediaMetadata || {};
+    const k = Math.min(innerWidth * .92 / w, innerHeight * .8 / h);
+    marco.style.width = w * k + 'px';
+    marco.style.height = h * k + 'px';
+    portadaVideo(marco, f);
+  } else {
+    const img = document.createElement('img');
+    img.alt = f.description || '';
+    encajar(marco, img, f, innerWidth * .92, innerHeight * .8);
+    img.src = foto(f.id, 400); // la miniatura ya está en caché: se ve al instante y luego se cambia por la nítida
+    marco.append(img);
+  }
+  const texto = document.createElement('p');
+  texto.textContent = f.description || '';
+  s.append(marco, texto);
+  visible.observe(s);
+  return s;
+}
+
+function abrirGaleria(lista, i) {
+  tira.textContent = '';
+  tira.append(...lista.map(diapositiva));
+  dlgFoto.showModal();
+  tira.scrollLeft = i * tira.clientWidth;
+}
+
 const citas = document.getElementById('citas');
 const foto = (id, ancho) => `https://drive.google.com/thumbnail?id=${id}&sz=w${ancho}`;
 const fecha = f => f.name.replace(/^\D+/, ''); // IMG_20260904_... / VID_20260904_... → orden cronológico
@@ -367,25 +499,6 @@ function encajar(marco, img, f, maxW, maxH) {
   img.onload = () => poner(giroReal(img, f));
 }
 
-function abrir(f) {
-  const video = f.mimeType.startsWith('video/');
-  const marco = document.getElementById('marco');
-  verImg.hidden = video;
-  verVideo.hidden = !video;
-  if (video) {
-    const {width: w = 16, height: h = 9} = f.videoMediaMetadata || {};
-    const s = Math.min(innerWidth * .92 / w, innerHeight * .8 / h);
-    marco.style.width = w * s + 'px';
-    marco.style.height = h * s + 'px';
-    verVideo.src = `https://drive.google.com/file/d/${f.id}/preview`;
-  } else {
-    encajar(marco, verImg, f, innerWidth * .92, innerHeight * .8);
-    verImg.src = foto(f.id, 2000);
-  }
-  dlgFoto.querySelector('p').textContent = f.description || '';
-  dlgFoto.showModal();
-}
-
 async function driveListar(carpeta, filtro) {
   const q = encodeURIComponent(`'${carpeta}' in parents and trashed = false and ${filtro}`);
   const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&orderBy=name&pageSize=1000` +
@@ -395,7 +508,7 @@ async function driveListar(carpeta, filtro) {
   return (await r.json()).files;
 }
 
-// Si en la carpeta principal hay una imagen llamada "cinnamoroll…", reemplaza al dibujo del inicio
+// Si en la carpeta principal hay una imagen llamada "cinnamoroll…", reemplaza al dibujo (inicio y encabezado)
 async function cargarCinnamoroll() {
   const [f] = await driveListar(DRIVE_CARPETA, "mimeType contains 'image/' and name contains 'cinnamoroll'");
   if (!f) return;
@@ -403,7 +516,12 @@ async function cargarCinnamoroll() {
   const c = quitarFondo(await createImageBitmap(await r.blob()));
   c.className = 'cinna';
   c.setAttribute('aria-label', 'Cinnamoroll');
-  document.querySelector('svg.cinna')?.replaceWith(c);
+  const copia = document.createElement('canvas');
+  copia.width = c.width;
+  copia.height = c.height;
+  copia.getContext('2d').drawImage(c, 0, 0);
+  document.getElementById('cabeza-cinna').replaceChildren(copia);
+  document.querySelector('#ventana svg.cinna')?.replaceWith(c);
 }
 
 // "Varita mágica": vuelve transparente el fondo claro y gris (blanco o cuadritos falsos) que toca
@@ -461,23 +579,29 @@ async function cargarDrive() {
       driveListar(c.id, "(mimeType contains 'image/' or mimeType contains 'video/')")));
     citas.textContent = '';
     carpetas.forEach((c, i) => {
-      const h = document.createElement('h2');
-      h.textContent = sinNumero(c.name);
+      // cada cita se despliega al tocarla; las fotos de una cita cerrada no se descargan
+      const sec = document.createElement('details');
+      const h = document.createElement('summary');
+      h.innerHTML = '<span></span><small></small>';
+      h.querySelector('span').textContent = sinNumero(c.name);
+      h.querySelector('small').textContent = archivos[i].length;
       const grid = document.createElement('div');
       grid.className = 'album';
-      for (const f of archivos[i].sort((a, b) => fecha(a).localeCompare(fecha(b)))) {
+      const lista = archivos[i].sort((a, b) => fecha(a).localeCompare(fecha(b)));
+      lista.forEach((f, j) => {
         const b = document.createElement('button');
         if (f.mimeType.startsWith('video/')) b.className = 'video';
         const img = document.createElement('img');
         enderezar(img, f);
+        img.loading = 'lazy'; // antes del src, para que no descargue hasta que se despliegue la cita
         img.src = foto(f.id, 400);
         img.alt = f.description || '';
-        img.loading = 'lazy';
         b.append(img);
-        b.onclick = () => abrir(f);
+        b.onclick = () => abrirGaleria(lista, j);
         grid.append(b);
-      }
-      citas.append(h, grid);
+      });
+      sec.append(h, grid);
+      citas.append(sec);
     });
   } catch (e) {
     citas.textContent = listaCartas.textContent = 'No pude conectar con Drive 😢 (' + e.message + ')';
