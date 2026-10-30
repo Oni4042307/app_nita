@@ -219,7 +219,7 @@ body.noche nav button:not(.solo-noche),body:not(.noche) .solo-noche{display:none
   <button data-panel="cartas" aria-selected="true">💌 Cartas</button>
   <button data-panel="contador" aria-selected="false">⏳ Contador</button>
   <button data-panel="album" aria-selected="false">📷 Álbum</button>
-  <button data-panel="minet" aria-selected="false" class="solo-noche">💋 Mon Minet</button>
+  <button data-panel="minet" aria-selected="false" class="solo-noche">💋 Nuestra galería de arte</button>
 </nav>
 <main>
   <section id="cartas"><h1>Cartas para ti</h1><div class="cartas"></div></section>
@@ -381,12 +381,12 @@ document.getElementById('luna').onclick = () => {
   if (!noche) cerrarMinet();
 };
 
-// Practica Mon Minet: fotos cifradas (AES-GCM, clave derivada de la contraseña con PBKDF2) en mon-minet/.
-// Sin la contraseña los archivos son ilegibles. Se generan con herramientas/cifrar.mjs.
+// Practica Mon Minet: las fotos están en una carpeta de Drive aparte (fuera de App Nita). Su dirección no
+// aparece en el código: va cifrada en mon-minet.bin (AES-GCM, clave derivada de la contraseña con PBKDF2),
+// así que solo con la contraseña se sabe qué carpeta leer. Se genera con herramientas/cifrar.mjs.
 const rascas = document.querySelector('.rascas'), msgMinet = document.getElementById('minet-msg');
 const formMinet = document.getElementById('clave-minet');
 function cerrarMinet() {
-  for (const i of rascas.querySelectorAll('img')) URL.revokeObjectURL(i.src);
   rascas.textContent = '';
   msgMinet.textContent = '';
   formMinet.reset();
@@ -402,26 +402,26 @@ formMinet.onsubmit = async e => {
   }
 };
 async function abrirMinet(clave) {
-  const r = await fetch('mon-minet/indice.bin', {cache: 'no-store'});
+  const r = await fetch('mon-minet.bin', {cache: 'no-store'});
   if (!r.ok) throw new Error('Todavía no hay fotos aquí 😏');
-  const datos = new Uint8Array(await r.arrayBuffer());
+  const datos = new Uint8Array(await r.arrayBuffer()); // sal(16) + iv(12) + cifrado
   const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(clave), 'PBKDF2', false, ['deriveKey']);
   const llave = await crypto.subtle.deriveKey({name: 'PBKDF2', salt: datos.slice(0, 16), iterations: 600000, hash: 'SHA-256'},
     base, {name: 'AES-GCM', length: 256}, false, ['decrypt']);
-  const abrir = async bytes => crypto.subtle.decrypt({name: 'AES-GCM', iv: bytes.slice(0, 12)}, llave, bytes.slice(12));
-  let indice;
+  let carpeta;
   try {
-    indice = JSON.parse(new TextDecoder().decode(await abrir(datos.slice(16))));
+    ({carpeta} = JSON.parse(new TextDecoder().decode(
+      await crypto.subtle.decrypt({name: 'AES-GCM', iv: datos.slice(16, 28)}, llave, datos.slice(28)))));
   } catch {
     throw new Error('Contraseña incorrecta 🙈');
   }
+  const fotos = await driveListar(carpeta, "mimeType contains 'image/'");
+  if (!document.body.classList.contains('noche')) return; // salió mientras cargaba
+  if (!fotos.length) throw new Error('Todavía no hay fotos aquí 😏');
   formMinet.hidden = true;
   msgMinet.textContent = 'Rasca cada foto para descubrirla ♡';
-  for (const f of indice.fotos) {
-    const bytes = new Uint8Array(await (await fetch('mon-minet/' + f.archivo, {cache: 'no-store'})).arrayBuffer());
-    if (!document.body.classList.contains('noche')) return; // salió mientras cargaba
-    rascas.append(tarjetaRasca(URL.createObjectURL(new Blob([await abrir(bytes)], {type: f.tipo})), f.texto));
-  }
+  // las imágenes grandes de Drive ya vienen giradas, así que no hace falta enderezarlas
+  for (const f of fotos) rascas.append(tarjetaRasca(foto(f.id, 1600), f.description));
 }
 
 function tarjetaRasca(url, texto) {
