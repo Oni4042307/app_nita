@@ -59,13 +59,10 @@ dialog::backdrop{background:#0008}
 // ✏️ ===== EDITA AQUÍ ===== ✏️
 const INICIO = '2026-09-04T00:00-05:00'; // fecha y hora en que empezaron (hora Colombia)
 
-const CARTAS = [
-  {titulo: 'Mi primera carta', fecha: '30 oct 2026', texto: `Escribe aquí tu carta.
-Puedes usar varias líneas.`},
-];
-
-// Álbum: carpeta de Google Drive con una subcarpeta por cita (se ordenan por nombre: "01 Nos hicimos novios", "02 Primer mes"...)
-// El texto de cada foto es su "Descripción" en Drive
+// Todo sale de una carpeta de Google Drive:
+// - Álbum: una subcarpeta por cita (se ordenan por nombre: "01 Nos hicimos novios", "02 Primer mes"...).
+//   El texto de cada foto es su "Descripción" en Drive.
+// - Cartas: subcarpeta "Cartas" con un Google Doc por carta (el nombre del doc es el título).
 const DRIVE_CARPETA = '1bfBzTVraj5zJXESwc57ofePtUybQEaMh'; // ID de la carpeta principal (lo que va después de /folders/ en el link)
 const DRIVE_CLAVE = 'AIzaSyCzEVuzj9P6EhPD7hwDVhsYKPEGUc-XFfQ';   // clave de API de Google
 // ✏️ ====================== ✏️
@@ -79,18 +76,29 @@ tabs.forEach(b => b.onclick = () => {
 
 // Cartas
 const dlgCarta = document.getElementById('carta');
-for (const c of CARTAS) {
-  const b = document.createElement('button');
-  b.className = 'carta';
-  b.innerHTML = '<strong></strong><small></small>';
-  b.querySelector('strong').textContent = c.titulo;
-  b.querySelector('small').textContent = c.fecha;
-  b.onclick = () => {
-    dlgCarta.querySelector('h2').textContent = c.titulo;
-    dlgCarta.querySelector('p').textContent = c.texto;
-    dlgCarta.showModal();
-  };
-  document.querySelector('.cartas').append(b);
+const listaCartas = document.querySelector('.cartas');
+const sinNumero = nombre => nombre.replace(/^\d+\s*[-.·]?\s*/, ''); // "01 Título" → "Título"
+
+async function cargarCartas(carpeta) {
+  const docs = await driveListar(carpeta, "mimeType = 'application/vnd.google-apps.document'");
+  listaCartas.textContent = docs.length ? '' : 'Todavía no hay cartas 💌';
+  for (const d of docs) {
+    const b = document.createElement('button');
+    b.className = 'carta';
+    b.innerHTML = '<strong></strong><small></small>';
+    b.querySelector('strong').textContent = sinNumero(d.name);
+    b.querySelector('small').textContent =
+      new Date(d.createdTime).toLocaleDateString('es-CO', {day: 'numeric', month: 'long', year: 'numeric'});
+    b.onclick = async () => {
+      const texto = dlgCarta.querySelector('p');
+      dlgCarta.querySelector('h2').textContent = sinNumero(d.name);
+      texto.textContent = 'Abriendo…';
+      dlgCarta.showModal();
+      const r = await fetch(`https://www.googleapis.com/drive/v3/files/${d.id}/export?mimeType=text/plain&key=${DRIVE_CLAVE}`);
+      texto.textContent = r.ok ? (await r.text()).trim() : 'No pude abrir la carta 😢';
+    };
+    listaCartas.append(b);
+  }
 }
 
 // Contador
@@ -152,23 +160,26 @@ function abrir(f) {
 async function driveListar(carpeta, filtro) {
   const q = encodeURIComponent(`'${carpeta}' in parents and trashed = false and ${filtro}`);
   const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&orderBy=name&pageSize=1000` +
-    `&fields=files(id,name,description,mimeType,imageMediaMetadata(width,height,rotation),videoMediaMetadata(width,height))` +
+    `&fields=files(id,name,description,mimeType,createdTime,imageMediaMetadata(width,height,rotation),videoMediaMetadata(width,height))` +
     `&key=${DRIVE_CLAVE}`);
   if (!r.ok) throw new Error(`Drive respondió ${r.status}`);
   return (await r.json()).files;
 }
 
-async function cargarAlbum() {
-  if (!DRIVE_CARPETA) return;
-  citas.textContent = 'Cargando fotos…';
+async function cargarDrive() {
+  citas.textContent = listaCartas.textContent = 'Cargando…';
   try {
-    const carpetas = await driveListar(DRIVE_CARPETA, "mimeType = 'application/vnd.google-apps.folder'");
+    const todas = await driveListar(DRIVE_CARPETA, "mimeType = 'application/vnd.google-apps.folder'");
+    const cartas = todas.find(c => c.name.trim().toLowerCase() === 'cartas');
+    if (cartas) cargarCartas(cartas.id).catch(e => listaCartas.textContent = 'No pude cargar las cartas 😢 (' + e.message + ')');
+    else listaCartas.textContent = 'Todavía no hay cartas 💌';
+    const carpetas = todas.filter(c => c !== cartas);
     const archivos = await Promise.all(carpetas.map(c =>
       driveListar(c.id, "(mimeType contains 'image/' or mimeType contains 'video/')")));
     citas.textContent = '';
     carpetas.forEach((c, i) => {
       const h = document.createElement('h2');
-      h.textContent = c.name.replace(/^\d+\s*[-.·]?\s*/, ''); // quita el número de orden
+      h.textContent = sinNumero(c.name);
       const grid = document.createElement('div');
       grid.className = 'album';
       for (const f of archivos[i].sort((a, b) => fecha(a).localeCompare(fecha(b)))) {
@@ -186,10 +197,10 @@ async function cargarAlbum() {
       citas.append(h, grid);
     });
   } catch (e) {
-    citas.textContent = 'No pude cargar las fotos de Drive 😢 (' + e.message + ')';
+    citas.textContent = listaCartas.textContent = 'No pude conectar con Drive 😢 (' + e.message + ')';
   }
 }
-cargarAlbum();
+cargarDrive();
 </script>
 </body>
 </html>
