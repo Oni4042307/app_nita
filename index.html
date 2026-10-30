@@ -31,6 +31,11 @@ dialog::backdrop{background:#0008}
 #carta{max-width:min(800px,92vw)}
 #carta .marco{margin-bottom:12px;border-radius:4px;box-shadow:0 2px 8px #0002}
 #carta button{background:var(--rosa);color:#fff;border:0;border-radius:8px;padding:8px 16px;font:inherit;cursor:pointer}
+#inicio{position:fixed;inset:0;z-index:2;display:grid;place-items:center;background:var(--fondo);text-align:center;padding:16px}
+#inicio h1{font-size:2.2rem}
+#inicio button{font:inherit;font-size:1.2rem;padding:12px 32px;margin:8px;border:0;border-radius:999px;cursor:pointer}
+#si{background:var(--rosa);color:#fff}
+#no{background:#fff;color:var(--texto);box-shadow:0 2px 8px #0002;transition:left .2s,top .2s}
 #foto{padding:0;background:none}
 .marco{position:relative;border-radius:12px;overflow:hidden}
 .marco img{position:absolute;left:50%;top:50%}
@@ -39,6 +44,12 @@ dialog::backdrop{background:#0008}
 </style>
 </head>
 <body>
+<div id="inicio">
+  <div>
+    <h1>Do you still love me? 🥺</h1>
+    <button id="si">Yes</button><button id="no">No</button>
+  </div>
+</div>
 <nav>
   <button data-panel="cartas" aria-selected="true">💌 Cartas</button>
   <button data-panel="contador" aria-selected="false">⏳ Contador</button>
@@ -70,6 +81,25 @@ const INICIO = '2026-09-04T00:00-05:00'; // fecha y hora en que empezaron (hora 
 const DRIVE_CARPETA = '1bfBzTVraj5zJXESwc57ofePtUybQEaMh'; // ID de la carpeta principal (lo que va después de /folders/ en el link)
 const DRIVE_CLAVE = 'AIzaSyCzEVuzj9P6EhPD7hwDVhsYKPEGUc-XFfQ';   // clave de API de Google
 // ✏️ ====================== ✏️
+
+// Inicio: solo se entra con "Yes"; "No" salta a otro lugar de la pantalla
+const si = document.getElementById('si'), no = document.getElementById('no');
+si.onclick = () => document.getElementById('inicio').remove();
+no.onclick = () => {
+  if (no.style.position !== 'fixed') { // primera vez: arranca desde donde está para que se vea el salto
+    const b = no.getBoundingClientRect();
+    Object.assign(no.style, {position: 'fixed', left: b.left + 'px', top: b.top + 'px', margin: 0});
+    no.offsetWidth; // aplica la posición inicial antes de animar
+  }
+  const a = si.getBoundingClientRect();
+  let x, y;
+  do { // que no caiga encima de "Yes"
+    x = Math.random() * (innerWidth - no.offsetWidth);
+    y = Math.random() * (innerHeight - no.offsetHeight);
+  } while (x < a.right && x + no.offsetWidth > a.left && y < a.bottom && y + no.offsetHeight > a.top);
+  no.style.left = x + 'px';
+  no.style.top = y + 'px';
+};
 
 // Paneles
 const tabs = document.querySelectorAll('nav button');
