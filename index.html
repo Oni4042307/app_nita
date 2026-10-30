@@ -26,9 +26,9 @@ main section:not([hidden]){animation:entrar .4s ease-out}
 @keyframes resplandor{50%{filter:drop-shadow(0 0 16px #fff4c9)}}
 .cielo .logo{position:relative;z-index:2;margin:0;font-size:2.4rem;line-height:1.3}
 /* "Mi luNita" sentado en una nube esponjosa */
-.nubecita{position:relative;z-index:1;display:inline-block;margin-top:22px;padding:2px 30px 0;background:#fff;border-radius:999px;
+.nubecita{position:relative;z-index:1;display:inline-block;margin-top:22px;padding:2px 30px 0;background:var(--nube,#fff);border-radius:999px;
   box-shadow:0 4px 0 #cde8f8;animation:flotar 3s ease-in-out infinite}
-.nubecita::before,.nubecita::after{content:'';position:absolute;z-index:-1;background:#fff;border-radius:50%}
+.nubecita::before,.nubecita::after{content:'';position:absolute;z-index:-1;background:var(--nube,#fff);border-radius:50%}
 .nubecita::before{width:40px;height:40px;left:20px;top:-16px}
 .nubecita::after{width:52px;height:52px;right:22px;top:-22px}
 .cielo .sub{position:relative;z-index:1;margin:2px 0 0;font-size:1.5rem;color:#fff;
@@ -75,6 +75,26 @@ dialog::backdrop{background:#2a4a6688}
 #carta{max-width:min(800px,92vw);box-shadow:6px 6px 0 var(--azul)}
 #carta .marco{margin-bottom:12px;border-radius:4px;box-shadow:0 2px 8px #0002}
 #carta button{background:var(--rosado);color:#fff;border:3px solid var(--azul-osc);border-radius:999px;padding:8px 22px;font:inherit;font-weight:600;box-shadow:3px 3px 0 var(--azul-osc);cursor:pointer}
+/* Modo noche (al tocar la luna): morado y rojo, solo con "Practica Mon Minet" */
+.luna{z-index:3;padding:0;border:0;background:none;cursor:pointer;pointer-events:auto}
+body.noche{--cielo:#3a1c4f;--azul:#9b4dca;--azul-osc:#e0435c;--rosado:#c2185b;--rosa-letra:#ff6b8b;--fondo:#160b1f;--texto:#f6dbe6;--nube:#3a1650;
+  background:var(--fondo) repeating-conic-gradient(#1f0f2b 0 25%,transparent 0 50%) 0 0/28px 28px}
+body.noche .cielo{background:radial-gradient(circle at 12% 70%,#e0435c44,transparent 45%),linear-gradient(170deg,#0d0418,#33104a 45%,#6b0f3a 85%,#9e1b3f);box-shadow:0 4px 0 var(--azul)}
+body.noche .luna{animation:none;box-shadow:inset -13px 7px 0 0 #ff6b8b;filter:drop-shadow(0 0 12px #ff6b8b)}
+body.noche nav{background:#160b1fd9}
+body.noche nav button,body.noche .carta,body.noche #citas details,body.noche dialog:not(#foto){background:#24122f}
+body.noche nav button:not(.solo-noche),body:not(.noche) .solo-noche{display:none}
+#clave-minet{display:flex;gap:8px;justify-content:center;margin:16px 0}
+#clave-minet input{flex:1;max-width:260px;padding:10px 16px;border:2px solid var(--azul);border-radius:999px;background:#24122f;color:var(--texto);font:inherit}
+#clave-minet button{padding:10px 18px;border:0;border-radius:999px;background:var(--rosado);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+#minet-msg{text-align:center;opacity:.85}
+/* rasca y descubre: el lienzo tapa la foto y se borra con el dedo; los lados quedan libres para hacer scroll */
+.rascas{display:grid;gap:22px;justify-items:center}
+.rasca{position:relative;width:86%;margin:0;border-radius:14px;overflow:hidden;box-shadow:0 0 0 3px var(--azul),0 8px 24px #0008}
+.rasca img{display:block;width:100%}
+.rasca canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair;transition:opacity .6s}
+.rasca.descubierta canvas{opacity:0;pointer-events:none}
+.rasca figcaption{padding:8px 12px;background:#24122f;text-align:center}
 /* Inicio */
 #inicio{position:fixed;inset:0;z-index:2;display:grid;place-items:center;overflow:hidden;padding:16px;text-align:center;
   background:linear-gradient(#e9f7ff,#fdf0f6);color:var(--azul-osc);
@@ -185,7 +205,7 @@ dialog::backdrop{background:#2a4a6688}
   </div>
 </div>
 <header class="cielo">
-  <span class="luna" aria-hidden="true"></span>
+  <button class="luna" id="luna" aria-label="Luna"></button>
   <p class="logo titulo">Para Nita</p>
   <div class="nubecita"><p class="sub titulo">Mi luNita</p></div>
   <svg class="estela" aria-hidden="true">
@@ -199,6 +219,7 @@ dialog::backdrop{background:#2a4a6688}
   <button data-panel="cartas" aria-selected="true">💌 Cartas</button>
   <button data-panel="contador" aria-selected="false">⏳ Contador</button>
   <button data-panel="album" aria-selected="false">📷 Álbum</button>
+  <button data-panel="minet" aria-selected="false" class="solo-noche">💋 Mon Minet</button>
 </nav>
 <main>
   <section id="cartas"><h1>Cartas para ti</h1><div class="cartas"></div></section>
@@ -209,6 +230,12 @@ dialog::backdrop{background:#2a4a6688}
     <p class="centro" id="segundos"></p>
   </section>
   <section id="album" hidden><h1>Nuestro álbum</h1><div id="citas"></div></section>
+  <section id="minet" hidden>
+    <h1>Practica Mon Minet</h1>
+    <form id="clave-minet"><input type="password" placeholder="Contraseña" autocomplete="off" required><button>Abrir 🔓</button></form>
+    <p id="minet-msg"></p>
+    <div class="rascas"></div>
+  </section>
 </main>
 
 <dialog id="carta"><h2></h2><div class="paginas"></div><form method="dialog"><button>Cerrar</button></form></dialog>
@@ -346,6 +373,112 @@ tabs.forEach(b => b.onclick = () => {
   tabs.forEach(x => x.setAttribute('aria-selected', x === b));
   document.querySelectorAll('main section').forEach(s => s.hidden = s.id !== b.dataset.panel);
 });
+
+// Modo noche: la luna deja solo "Practica Mon Minet"; al salir no queda nada descifrado en pantalla
+document.getElementById('luna').onclick = () => {
+  const noche = document.body.classList.toggle('noche');
+  document.querySelector(`nav button[data-panel=${noche ? 'minet' : 'cartas'}]`).click();
+  if (!noche) cerrarMinet();
+};
+
+// Practica Mon Minet: fotos cifradas (AES-GCM, clave derivada de la contraseña con PBKDF2) en mon-minet/.
+// Sin la contraseña los archivos son ilegibles. Se generan con herramientas/cifrar.mjs.
+const rascas = document.querySelector('.rascas'), msgMinet = document.getElementById('minet-msg');
+const formMinet = document.getElementById('clave-minet');
+function cerrarMinet() {
+  for (const i of rascas.querySelectorAll('img')) URL.revokeObjectURL(i.src);
+  rascas.textContent = '';
+  msgMinet.textContent = '';
+  formMinet.reset();
+  formMinet.hidden = false;
+}
+formMinet.onsubmit = async e => {
+  e.preventDefault();
+  msgMinet.textContent = 'Abriendo…';
+  try {
+    await abrirMinet(formMinet.elements[0].value);
+  } catch (err) {
+    msgMinet.textContent = err.message;
+  }
+};
+async function abrirMinet(clave) {
+  const r = await fetch('mon-minet/indice.bin', {cache: 'no-store'});
+  if (!r.ok) throw new Error('Todavía no hay fotos aquí 😏');
+  const datos = new Uint8Array(await r.arrayBuffer());
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(clave), 'PBKDF2', false, ['deriveKey']);
+  const llave = await crypto.subtle.deriveKey({name: 'PBKDF2', salt: datos.slice(0, 16), iterations: 600000, hash: 'SHA-256'},
+    base, {name: 'AES-GCM', length: 256}, false, ['decrypt']);
+  const abrir = async bytes => crypto.subtle.decrypt({name: 'AES-GCM', iv: bytes.slice(0, 12)}, llave, bytes.slice(12));
+  let indice;
+  try {
+    indice = JSON.parse(new TextDecoder().decode(await abrir(datos.slice(16))));
+  } catch {
+    throw new Error('Contraseña incorrecta 🙈');
+  }
+  formMinet.hidden = true;
+  msgMinet.textContent = 'Rasca cada foto para descubrirla ♡';
+  for (const f of indice.fotos) {
+    const bytes = new Uint8Array(await (await fetch('mon-minet/' + f.archivo, {cache: 'no-store'})).arrayBuffer());
+    if (!document.body.classList.contains('noche')) return; // salió mientras cargaba
+    rascas.append(tarjetaRasca(URL.createObjectURL(new Blob([await abrir(bytes)], {type: f.tipo})), f.texto));
+  }
+}
+
+function tarjetaRasca(url, texto) {
+  const t = document.createElement('figure');
+  t.className = 'rasca';
+  const img = document.createElement('img'), lienzo = document.createElement('canvas');
+  img.alt = '';
+  t.append(img, lienzo);
+  if (texto) {
+    const c = document.createElement('figcaption');
+    c.textContent = texto;
+    t.append(c);
+  }
+  img.onload = () => {
+    const dpr = devicePixelRatio || 1, W = lienzo.width = img.clientWidth * dpr, H = lienzo.height = img.clientHeight * dpr;
+    lienzo.style.height = img.clientHeight + 'px';
+    const ctx = lienzo.getContext('2d');
+    const g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, '#5b1a7a');
+    g.addColorStop(1, '#b3123f');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#ffffff2e';
+    ctx.font = 26 * dpr + 'px sans-serif';
+    for (let i = 0; i < 30; i++) ctx.fillText('♥', Math.random() * W, Math.random() * H);
+    ctx.fillStyle = '#fff';
+    ctx.font = 26 * dpr + 'px Pacifico';
+    ctx.textAlign = 'center';
+    ctx.fillText('Rasca aquí ♡', W / 2, H / 2);
+    ctx.globalCompositeOperation = 'destination-out'; // de aquí en adelante, pintar = borrar
+    ctx.lineWidth = 46 * dpr;
+    ctx.lineCap = 'round';
+    let ultimo = null;
+    const punto = e => {
+      const b = lienzo.getBoundingClientRect();
+      return [(e.clientX - b.left) * dpr, (e.clientY - b.top) * dpr];
+    };
+    const raspar = p => {
+      ctx.beginPath();
+      ctx.moveTo(...(ultimo || p));
+      ctx.lineTo(...p);
+      ctx.stroke();
+      ultimo = p;
+    };
+    lienzo.onpointerdown = e => { lienzo.setPointerCapture(e.pointerId); ultimo = null; raspar(punto(e)); };
+    lienzo.onpointermove = e => { if (ultimo) raspar(punto(e)); };
+    lienzo.onpointerup = lienzo.onpointercancel = () => {
+      ultimo = null;
+      const px = ctx.getImageData(0, 0, W, H).data;
+      let borrados = 0, vistos = 0;
+      for (let i = 3; i < px.length; i += 4 * 37) { vistos++; if (!px[i]) borrados++; }
+      if (borrados / vistos > .55) t.classList.add('descubierta'); // con más de la mitad raspada se descubre toda
+    };
+  };
+  img.src = url;
+  return t;
+}
 
 // Cartas
 const dlgCarta = document.getElementById('carta');
