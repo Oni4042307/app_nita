@@ -8,7 +8,7 @@
 :root{--rosa:#e75480;--fondo:#fff5f8;--texto:#4a2c36}
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,sans-serif;background:var(--fondo);color:var(--texto)}
-nav{position:sticky;top:0;display:flex;background:#fff;box-shadow:0 2px 8px #0001}
+nav{position:sticky;top:0;z-index:1;display:flex;background:#fff;box-shadow:0 2px 8px #0001}
 nav button{flex:1;padding:14px;border:0;border-bottom:3px solid transparent;background:none;font:inherit;color:inherit;cursor:pointer}
 nav button[aria-selected=true]{border-color:var(--rosa);color:var(--rosa);font-weight:600}
 main{max-width:720px;margin:auto;padding:16px}
