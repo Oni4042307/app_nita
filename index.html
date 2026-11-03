@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Para ti ❤</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Pacifico&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
 /* Paleta Cinnamoroll */
 :root{--cielo:#dff2fc;--azul:#8ccbee;--azul-osc:#4a8fc4;--rosado:#f7a8c4;--rosa-letra:#f48fb8;--fondo:#eef8fe;--texto:#3b5f80}
@@ -43,7 +45,7 @@ main section:not([hidden]){animation:entrar .4s ease-out}
 .estela{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 .estela .humo{fill:none;stroke:#fff;stroke-width:2;stroke-dasharray:5 4;stroke-linecap:round;opacity:.9}
 .estela text{font-family:'Pacifico',cursive;font-size:40px;fill:#ffffff40;stroke-width:1.8;stroke-dasharray:3 2}
-nav{position:sticky;top:0;z-index:1;display:flex;justify-content:center;gap:8px;padding:12px 8px;background:#eef8fed9;backdrop-filter:blur(6px)}
+nav{position:sticky;top:0;z-index:1;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:12px 8px;background:#eef8fed9;backdrop-filter:blur(6px)}
 nav button{padding:8px 16px;border:2px solid var(--azul);border-radius:999px;background:#fff;font:inherit;font-weight:600;font-size:1rem;color:var(--azul-osc);cursor:pointer;transition:background .2s,color .2s,scale .2s}
 nav button[aria-selected=true]{background:var(--rosado);border-color:var(--rosa-letra);color:#fff;scale:1.06;animation:rebote .4s}
 @keyframes rebote{40%{scale:1.15}}
@@ -70,17 +72,22 @@ h1{text-align:center;font-size:2rem}
 .album button{position:relative;padding:0;border:3px solid #fff;border-radius:6px;overflow:hidden;background:var(--cielo);box-shadow:0 0 0 2px var(--azul);cursor:pointer}
 .album img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
 .album .video::after{content:'▶';position:absolute;inset:0;display:grid;place-items:center;font-size:2.2rem;color:#fff;text-shadow:0 0 10px #000a}
+/* Lugares: mapa con un corazón por sitio */
+#mapa{position:relative;z-index:0;height:min(62vh,440px);border:3px solid var(--azul);border-radius:6px;box-shadow:4px 4px 0 var(--azul);font:inherit}
+.pin{display:grid;place-items:center;font-size:32px;line-height:1;color:var(--rosa-letra);text-shadow:2px 0 #fff,-2px 0 #fff,0 2px #fff,0 -2px #fff,2px 3px 0 var(--azul)}
+.leaflet-popup-content .carta{padding:0;border:0;box-shadow:none;background:none}
 dialog{border:3px solid var(--azul);border-radius:6px;max-width:min(600px,92vw);padding:24px;color:inherit}
 dialog::backdrop{background:#2a4a6688}
 #carta{max-width:min(800px,92vw);box-shadow:6px 6px 0 var(--azul)}
 #carta .marco{margin-bottom:12px;border-radius:4px;box-shadow:0 2px 8px #0002}
 #carta button{background:var(--rosado);color:#fff;border:3px solid var(--azul-osc);border-radius:999px;padding:8px 22px;font:inherit;font-weight:600;box-shadow:3px 3px 0 var(--azul-osc);cursor:pointer}
 /* Modo noche (al tocar la luna): morado y rojo, solo con "Practica Mon Minet" */
-.luna{z-index:3;padding:0;border:0;background:none;cursor:pointer;pointer-events:auto}
+.luna{z-index:3;padding:0;border:0;background:none;cursor:pointer;pointer-events:auto;transition:box-shadow .9s ease-in-out,filter .9s}
 body.noche{--cielo:#3a1c4f;--azul:#9b4dca;--azul-osc:#e0435c;--rosado:#c2185b;--rosa-letra:#ff6b8b;--fondo:#160b1f;--texto:#f6dbe6;--nube:#3a1650;
   background:var(--fondo) repeating-conic-gradient(#1f0f2b 0 25%,transparent 0 50%) 0 0/28px 28px}
 body.noche .cielo{background:radial-gradient(circle at 12% 70%,#e0435c44,transparent 45%),linear-gradient(170deg,#0d0418,#33104a 45%,#6b0f3a 85%,#9e1b3f);box-shadow:0 4px 0 var(--azul)}
-body.noche .luna{animation:none;box-shadow:inset -13px 7px 0 0 #ff6b8b;filter:drop-shadow(0 0 12px #ff6b8b)}
+/* de noche crece hasta luna llena (la sombra interior cubre todo el círculo de 46 px) */
+body.noche .luna{animation:none;box-shadow:inset 0 0 0 23px #ff6b8b;filter:drop-shadow(0 0 16px #ff6b8b)}
 body.noche nav{background:#160b1fd9}
 body.noche nav button,body.noche .carta,body.noche #citas details,body.noche dialog:not(#foto){background:#24122f}
 body.noche nav button:not(.solo-noche),body:not(.noche) .solo-noche{display:none}
@@ -219,6 +226,7 @@ body.noche nav button:not(.solo-noche),body:not(.noche) .solo-noche{display:none
   <button data-panel="cartas" aria-selected="true">💌 Cartas</button>
   <button data-panel="contador" aria-selected="false">⏳ Contador</button>
   <button data-panel="album" aria-selected="false">📷 Álbum</button>
+  <button data-panel="lugares" aria-selected="false">🗺️ Lugares</button>
   <button data-panel="minet" aria-selected="false" class="solo-noche">💋 Nuestra galería de arte</button>
 </nav>
 <main>
@@ -230,6 +238,7 @@ body.noche nav button:not(.solo-noche),body:not(.noche) .solo-noche{display:none
     <p class="centro" id="segundos"></p>
   </section>
   <section id="album" hidden><h1>Nuestro álbum</h1><div id="citas"></div></section>
+  <section id="lugares" hidden><h1>Nuestros lugares</h1><div id="mapa"></div><p class="centro" id="lugares-msg"></p></section>
   <section id="minet" hidden>
     <h1>Practica Mon Minet</h1>
     <form id="clave-minet"><input type="password" placeholder="Contraseña" autocomplete="off" required><button>Abrir 🔓</button></form>
@@ -256,6 +265,9 @@ const INICIO = '2026-09-04T00:00-05:00'; // fecha y hora en que empezaron (hora 
 //   El texto de cada foto es su "Descripción" en Drive.
 // - Cartas: subcarpeta "Cartas". Cada foto es una carta; si tiene varias páginas, una subcarpeta con una foto por página.
 //   El nombre de la foto o subcarpeta es el título ("01 Mi primera carta").
+// - Lugares: subcarpeta "Lugares" con una subcarpeta por sitio y sus fotos adentro. La ubicación va en la
+//   "Descripción" de la subcarpeta o al final del nombre ("01 Nuestra primera cita | 4.60971, -74.08175"):
+//   en Google Maps, clic derecho en el sitio y clic en los números para copiarlos. El resto de la descripción es su texto.
 const DRIVE_CARPETA = '1bfBzTVraj5zJXESwc57ofePtUybQEaMh'; // ID de la carpeta principal (lo que va después de /folders/ en el link)
 const DRIVE_CLAVE = 'AIzaSyCzEVuzj9P6EhPD7hwDVhsYKPEGUc-XFfQ';   // clave de API de Google
 // ✏️ ====================== ✏️
@@ -372,6 +384,7 @@ const tabs = document.querySelectorAll('nav button');
 tabs.forEach(b => b.onclick = () => {
   tabs.forEach(x => x.setAttribute('aria-selected', x === b));
   document.querySelectorAll('main section').forEach(s => s.hidden = s.id !== b.dataset.panel);
+  if (b.dataset.panel === 'lugares') (dibujo ||= pintarMapa()).then(m => m?.invalidateSize());
 });
 
 // Modo noche: la luna deja solo "Practica Mon Minet"; al salir no queda nada descifrado en pantalla
@@ -828,15 +841,80 @@ function quitarFondo(bmp) {
   return recorte;
 }
 
+const carpetasDrive = driveListar(DRIVE_CARPETA, "mimeType = 'application/vnd.google-apps.folder'");
+const llamada = (todas, nombre) => todas.find(c => c.name.trim().toLowerCase() === nombre);
+
+// Lugares (ver arriba en "EDITA AQUÍ")
+const COORD = /(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/; // "4.60971, -74.08175"
+const lugares = carpetasDrive.then(async todas => {
+  const raiz = llamada(todas, 'lugares');
+  if (!raiz) return [];
+  const sitios = await driveListar(raiz.id, "mimeType = 'application/vnd.google-apps.folder'");
+  const fotos = await Promise.all(sitios.map(c => driveListar(c.id, "(mimeType contains 'image/' or mimeType contains 'video/')")));
+  return sitios.map((c, i) => leerLugar(c, fotos[i].sort((a, b) => fecha(a).localeCompare(fecha(b)))));
+});
+function leerLugar(c, fotos) {
+  const desc = c.description || '', m = desc.match(COORD) || c.name.match(COORD);
+  return {
+    titulo: sinNumero(c.name.replace(COORD, '')).replace(/[\s|·,-]+$/, ''),
+    texto: desc.replace(COORD, '').trim(),
+    pos: m && [+m[1], +m[2]],
+    fotos,
+  };
+}
+let dibujo; // el mapa se arma la primera vez que se abre "Lugares" (Leaflet necesita verlo en pantalla)
+async function pintarMapa() {
+  const div = document.getElementById('mapa'), msg = document.getElementById('lugares-msg');
+  let lista;
+  try {
+    lista = await lugares;
+  } catch (e) {
+    div.hidden = true;
+    msg.textContent = 'No pude conectar con Drive 😢 (' + e.message + ')';
+    return;
+  }
+  const sinUbicacion = lista.filter(l => !l.pos).map(l => l.titulo);
+  lista = lista.filter(l => l.pos);
+  msg.textContent = sinUbicacion.length ? 'Falta la ubicación de: ' + sinUbicacion.join(', ') : '';
+  if (!lista.length) {
+    div.hidden = true;
+    msg.textContent ||= 'Todavía no hay lugares 🗺️';
+    return;
+  }
+  const mapa = L.map(div);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    {maxZoom: 19, attribution: '© OpenStreetMap © CARTO'}).addTo(mapa);
+  // camino punteado de un lugar al siguiente, en el orden de las carpetas
+  L.polyline(lista.map(l => l.pos), {color: '#f48fb8', weight: 3, dashArray: '6 8'}).addTo(mapa);
+  const corazon = L.divIcon({className: 'pin', html: '♥', iconSize: [32, 32]});
+  for (const l of lista) {
+    const b = document.createElement('button');
+    b.className = 'carta';
+    b.innerHTML = '<span class="mini"><img alt=""></span><span><strong></strong><small></small></span>';
+    b.querySelector('strong').textContent = l.titulo;
+    b.querySelector('small').textContent = l.texto || p(l.fotos.length, 'foto', 'fotos');
+    const [f] = l.fotos, img = b.querySelector('img');
+    if (f) {
+      enderezar(img, f);
+      img.src = foto(f.id, 200);
+      b.onclick = () => abrirGaleria(l.fotos, 0);
+    } else b.querySelector('.mini').remove();
+    L.marker(l.pos, {icon: corazon}).bindPopup(b).addTo(mapa);
+  }
+  mapa.fitBounds(lista.map(l => l.pos), {padding: [40, 40], maxZoom: 16});
+  return mapa;
+}
+
 async function cargarDrive() {
   cargarCinnamoroll().catch(() => {}); // si falla, se queda el dibujo
   citas.textContent = listaCartas.textContent = 'Cargando…';
   try {
-    const todas = await driveListar(DRIVE_CARPETA, "mimeType = 'application/vnd.google-apps.folder'");
-    const cartas = todas.find(c => c.name.trim().toLowerCase() === 'cartas');
+    const todas = await carpetasDrive;
+    const cartas = llamada(todas, 'cartas'), sitios = llamada(todas, 'lugares');
     if (cartas) cargarCartas(cartas.id).catch(e => listaCartas.textContent = 'No pude cargar las cartas 😢 (' + e.message + ')');
     else listaCartas.textContent = 'Todavía no hay cartas 💌';
-    const carpetas = todas.filter(c => c !== cartas);
+    // la carpeta de Practica Mon Minet solo se abre con la contraseña desde la luna
+    const carpetas = todas.filter(c => c !== cartas && c !== sitios && !/practica|mon minet/i.test(c.name));
     const archivos = await Promise.all(carpetas.map(c =>
       driveListar(c.id, "(mimeType contains 'image/' or mimeType contains 'video/')")));
     citas.textContent = '';
