@@ -841,6 +841,9 @@ function quitarFondo(bmp) {
   return recorte;
 }
 
+const MINET_HUELLA = '4d1414851231c6cbbf6477bfd33979dcafc3af103e8323e28f5ee66c480865bf';
+const huella = async t => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)))]
+  .map(b => b.toString(16).padStart(2, '0')).join('');
 const carpetasDrive = driveListar(DRIVE_CARPETA, "mimeType = 'application/vnd.google-apps.folder'");
 const llamada = (todas, nombre) => todas.find(c => c.name.trim().toLowerCase() === nombre);
 
@@ -913,8 +916,11 @@ async function cargarDrive() {
     const cartas = llamada(todas, 'cartas'), sitios = llamada(todas, 'lugares');
     if (cartas) cargarCartas(cartas.id).catch(e => listaCartas.textContent = 'No pude cargar las cartas 😢 (' + e.message + ')');
     else listaCartas.textContent = 'Todavía no hay cartas 💌';
-    // la carpeta de Practica Mon Minet solo se abre con la contraseña desde la luna
-    const carpetas = todas.filter(c => c !== cartas && c !== sitios && !/practica|mon minet/i.test(c.name));
+    // la carpeta de Practica Mon Minet solo se abre con la contraseña desde la luna: se reconoce por la huella
+    // (SHA-256) de su ID, que no revela la dirección, o por el nombre aunque tenga tildes
+    const huellas = await Promise.all(todas.map(c => huella(c.id)));
+    const carpetas = todas.filter((c, i) => c !== cartas && c !== sitios && huellas[i] !== MINET_HUELLA &&
+      !/practica|minet/i.test(c.name.normalize('NFD').replace(/[̀-ͯ]/g, '')));
     const archivos = await Promise.all(carpetas.map(c =>
       driveListar(c.id, "(mimeType contains 'image/' or mimeType contains 'video/')")));
     citas.textContent = '';
