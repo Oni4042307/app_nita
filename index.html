@@ -885,8 +885,9 @@ async function pintarMapa() {
     return;
   }
   const mapa = L.map(div);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    {maxZoom: 19, attribution: '© OpenStreetMap © CARTO'}).addTo(mapa);
+  // mapa de Esri: no pide clave (CARTO empezó a pedirla y mostraba "API KEY REQUIRED")
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    {maxZoom: 19, attribution: 'Tiles © Esri'}).addTo(mapa);
   // camino punteado de un lugar al siguiente, en el orden de las carpetas
   L.polyline(lista.map(l => l.pos), {color: '#f48fb8', weight: 3, dashArray: '6 8'}).addTo(mapa);
   const corazon = L.divIcon({className: 'pin', html: '♥', iconSize: [32, 32]});
