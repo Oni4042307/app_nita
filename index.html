@@ -155,10 +155,13 @@ body.noche nav button:not(.solo-noche),body:not(.noche) .solo-noche{display:none
 #inicio .opciones button{font:inherit;font-weight:600;font-size:18px;padding:8px 26px;margin:0 8px;border:3px solid var(--azul-osc);border-radius:999px;cursor:pointer;box-shadow:3px 3px 0 var(--azul-osc)}
 #si{background:var(--rosado);color:#fff}
 #no{background:#fff;color:var(--azul-osc);transition:left .2s,top .2s}
-/* confeti de cada mes cumplido */
-.confeti{position:fixed;top:-20px;z-index:3;width:9px;height:14px;border-radius:2px;pointer-events:none;animation:caer linear forwards}
-@keyframes caer{to{transform:translate(var(--x),110vh) rotate(var(--g))}}
-.aviso-mes{position:fixed;left:50%;top:32%;z-index:3;width:max-content;max-width:90vw;margin:0;translate:-50% 0;text-align:center;font-size:2.3rem;pointer-events:none;animation:aviso 6s forwards}
+/* mes cumplido: confeti dentro del contador todo el día y aviso que se desvanece */
+#contador{position:relative}
+.lluvia{display:none;position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none}
+.fiesta .lluvia{display:block}
+.lluvia i{position:absolute;top:-20px;width:9px;height:14px;border-radius:2px;animation:caer linear infinite}
+@keyframes caer{to{top:100%;transform:translateX(var(--x)) rotate(var(--g))}}
+.aviso-mes{position:absolute;left:50%;top:30%;z-index:2;width:max-content;max-width:90%;margin:0;translate:-50% 0;text-align:center;font-size:2.3rem;pointer-events:none;animation:aviso 6s forwards}
 @keyframes aviso{0%{opacity:0;scale:.3}10%{opacity:1;scale:1.12}16%{scale:1}85%{opacity:1}to{opacity:0}}
 .corazon{position:fixed;font-size:22px;pointer-events:none;animation:estallar 1.6s ease-out forwards}
 @keyframes estallar{from{transform:translate(-50%,-50%) scale(.4)}to{transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) scale(1.3);opacity:0}}
@@ -250,6 +253,8 @@ body.noche nav button:not(.solo-noche),body:not(.noche) .solo-noche{display:none
 <main>
   <section id="cartas"><h1>Cartas para ti</h1><div class="cartas"></div></section>
   <section id="contador" hidden>
+    <div class="lluvia" aria-hidden="true"></div>
+    <p class="aviso-mes titulo" hidden></p>
     <h1>Llevamos juntos</h1>
     <p class="grande" id="dias"></p>
     <p class="centro" id="detalle"></p>
@@ -382,10 +387,7 @@ si.onclick = () => {
     inicio.append(h);
   }
   setTimeout(() => inicio.classList.add('saliendo'), 2000);
-  setTimeout(() => {
-    inicio.remove();
-    if (hoyCumplimos) celebrar(hoyCumplimos);
-  }, 2600);
+  setTimeout(() => inicio.remove(), 2600);
 };
 no.onclick = () => {
   if (no.style.position !== 'fixed') { // primera vez: arranca desde donde está para que se vea el salto
@@ -409,6 +411,7 @@ tabs.forEach(b => b.onclick = () => {
   tabs.forEach(x => x.setAttribute('aria-selected', x === b));
   document.querySelectorAll('main section').forEach(s => s.hidden = s.id !== b.dataset.panel);
   if (b.dataset.panel === 'lugares') (dibujo ||= pintarMapa()).then(m => m?.invalidateSize());
+  if (b.dataset.panel === 'contador') avisarMes();
 });
 
 // Modo noche: la luna deja solo "Practica Mon Minet"; al salir no queda nada descifrado en pantalla
@@ -658,6 +661,7 @@ function contar() {
   const d = Math.round((hoy - ancla) / 864e5);
   const total = Math.round((hoy - new Date(s.getFullYear(), s.getMonth(), s.getDate())) / 864e5);
   hoyCumplimos = d === 0 && meses > 0 ? meses : 0;
+  document.getElementById('contador').classList.toggle('fiesta', hoyCumplimos > 0); // confeti todo ese día
 
   document.getElementById('dias').textContent = p(total, 'día', 'días');
   document.getElementById('detalle').textContent =
@@ -669,27 +673,29 @@ let hoyCumplimos = 0; // meses que se cumplen hoy (0 si hoy no es "mesario")
 contar();
 setInterval(contar, 1000);
 
-// Cada mes cumplido: lluvia de confeti y aviso al entrar
-function celebrar(meses) {
-  const colores = ['#f7a8c4', '#8ccbee', '#fff0a8', '#ff7aa8', '#c9b8f5'];
-  for (let i = 0; i < 140; i++) {
+// Cada mes cumplido: el contador tiene confeti cayendo todo el día (clase "fiesta") y un aviso al abrirlo
+const lluvia = document.querySelector('#contador .lluvia'), aviso = document.querySelector('#contador .aviso-mes');
+['#f7a8c4', '#8ccbee', '#fff0a8', '#ff7aa8', '#c9b8f5'].forEach(color => {
+  for (let j = 0; j < 14; j++) {
     const c = document.createElement('i');
-    c.className = 'confeti';
-    c.style.left = Math.random() * 100 + 'vw';
-    c.style.background = colores[i % colores.length];
-    c.style.setProperty('--x', (Math.random() - .5) * 240 + 'px');
-    c.style.setProperty('--g', (Math.random() - .5) * 2160 + 'deg');
-    c.style.animationDuration = 3 + Math.random() * 3 + 's';
-    c.style.animationDelay = Math.random() * 2 + 's';
-    c.onanimationend = () => c.remove();
-    document.body.append(c);
+    c.style.left = Math.random() * 100 + '%';
+    c.style.background = color;
+    c.style.setProperty('--x', (Math.random() - .5) * 160 + 'px');
+    c.style.setProperty('--g', (Math.random() - .5) * 1440 + 'deg');
+    c.style.animationDuration = 3.5 + Math.random() * 3 + 's';
+    c.style.animationDelay = -Math.random() * 6.5 + 's'; // ya van cayendo al abrir
+    lluvia.append(c);
   }
-  const aviso = document.createElement('p');
-  aviso.className = 'aviso-mes titulo';
-  aviso.textContent = `¡Hoy cumplimos ${p(meses, 'mes', 'meses')}! 🎉`;
-  aviso.onanimationend = () => aviso.remove();
-  document.body.append(aviso);
+});
+function avisarMes() {
+  if (!hoyCumplimos) return;
+  aviso.textContent = `¡Hoy cumplimos ${p(hoyCumplimos, 'mes', 'meses')}! 🎉`;
+  aviso.hidden = false;
+  aviso.style.animation = 'none';
+  aviso.offsetWidth; // reinicia la animación cada vez que se abre el contador
+  aviso.style.animation = '';
 }
+aviso.onanimationend = () => aviso.hidden = true;
 
 // Encabezado: nubes que pasan, brillitos y Cinnamoroll (el dibujo hasta que llegue la imagen de Drive)
 const cielo = document.querySelector('.cielo');
