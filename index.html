@@ -503,9 +503,12 @@ const listaCartas = document.querySelector('.cartas');
 const sinNumero = nombre => nombre.replace(/^\d+\s*[-.·]?\s*/, ''); // "01 Título" → "Título"
 
 async function cargarCartas(carpeta) {
-  const items = await driveListar(carpeta, "(mimeType contains 'image/' or mimeType = 'application/vnd.google-apps.folder')");
+  // fotos, subcarpetas de varias páginas, o documentos (Word, PDF, Google Docs) que se ven con el visor de Drive
+  const items = await driveListar(carpeta, "(mimeType contains 'image/' or mimeType = 'application/vnd.google-apps.folder'" +
+    " or mimeType = 'application/pdf' or mimeType = 'application/vnd.google-apps.document' or mimeType = 'application/msword'" +
+    " or mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')");
   const paginas = await Promise.all(items.map(c =>
-    c.mimeType.startsWith('image/') ? [c] : driveListar(c.id, "mimeType contains 'image/'")));
+    c.mimeType.endsWith('.folder') ? driveListar(c.id, "mimeType contains 'image/'") : [c]));
   listaCartas.textContent = '';
   items.forEach((c, i) => {
     const pags = paginas[i];
@@ -515,6 +518,7 @@ async function cargarCartas(carpeta) {
     b.className = 'carta';
     b.innerHTML = '<span class="mini"><img alt="" loading="lazy"></span><span><strong></strong><small></small></span>';
     enderezar(b.querySelector('img'), pags[0]);
+    b.querySelector('img').onerror = e => e.target.remove(); // si Drive no tiene miniatura del documento
     b.querySelector('img').src = foto(pags[0].id, 200);
     b.querySelector('strong').textContent = titulo;
     b.querySelector('small').textContent =
@@ -533,6 +537,12 @@ function abrirCarta(titulo, pags) {
   for (const f of pags) {
     const marco = document.createElement('div');
     marco.className = 'marco';
+    if (!f.mimeType.startsWith('image/')) { // documento: visor de Drive
+      Object.assign(marco.style, {width: ancho + 'px', height: '75vh', background: '#fff'});
+      marco.innerHTML = `<iframe src="https://drive.google.com/file/d/${f.id}/preview" title="Carta"></iframe>`;
+      cont.append(marco);
+      continue;
+    }
     const img = document.createElement('img');
     encajar(marco, img, f, ancho, Infinity);
     img.src = foto(f.id, 1600);
