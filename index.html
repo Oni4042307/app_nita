@@ -82,12 +82,12 @@ dialog::backdrop{background:#2a4a6688}
 #carta{max-width:min(800px,92vw);box-shadow:6px 6px 0 var(--azul)}
 #carta .marco{margin-bottom:12px;border-radius:4px;box-shadow:0 2px 8px #0002}
 #carta button{background:var(--rosado);color:#fff;border:3px solid var(--azul-osc);border-radius:999px;padding:8px 22px;font:inherit;font-weight:600;box-shadow:3px 3px 0 var(--azul-osc);cursor:pointer}
-/* Carta en Word: papel de Cinnamoroll. La imagen "cinnamoroll carta" de Drive reemplaza el cielo con nubes dibujado */
+/* Carta en Word: papel de Cinnamoroll con cielo y nubes; la imagen "cinnamoroll carta" de Drive va en la esquina */
 .papel{position:relative;padding:70px 14px 18px;border-radius:12px;box-shadow:0 2px 10px #0002;
-  background:var(--fondo-carta,radial-gradient(circle at 10% 9%,#fff 0 20px,transparent 21px),radial-gradient(circle at 17% 6%,#fff 0 26px,transparent 27px),
+  background:radial-gradient(circle at 10% 9%,#fff 0 20px,transparent 21px),radial-gradient(circle at 17% 6%,#fff 0 26px,transparent 27px),
     radial-gradient(circle at 24% 10%,#fff 0 18px,transparent 19px),radial-gradient(circle at 58% 5%,#ffffffb0 0 14px,transparent 15px),
-    radial-gradient(circle at 63% 4%,#ffffffb0 0 18px,transparent 19px),linear-gradient(170deg,#b6e2fa,#e3f4fd 45%,#fde2ee)) center/cover}
-.papel .cinna{position:absolute;top:4px;right:10px;width:96px;margin:0}
+    radial-gradient(circle at 63% 4%,#ffffffb0 0 18px,transparent 19px),linear-gradient(170deg,#b6e2fa,#e3f4fd 45%,#fde2ee)}
+.papel .cinna{position:absolute;top:4px;right:10px;width:96px;max-height:110px;object-fit:contain;margin:0}
 .hoja{position:relative;padding:8px 16px 10px 38px;border-radius:10px;font-size:1.05rem;line-height:2rem;color:var(--texto);
   background-color:#ffffffe6;background-position:0 8px;
   background-image:linear-gradient(90deg,transparent 24px,#f7a8c488 24px 26px,transparent 26px),
@@ -572,7 +572,8 @@ function visor(f, ancho) {
 }
 
 // Papel de carta de Cinnamoroll con el texto del Word; si no se puede leer, se abre en el visor de Drive
-const cinnaCarta = document.querySelector('svg.cinna').cloneNode(true); // el original se reemplaza al cargar Drive
+// dibujo de Cinnamoroll hasta que llegue la imagen "cinnamoroll carta" de Drive (el original del inicio se reemplaza)
+let cinnaCarta = document.querySelector('svg.cinna').cloneNode(true);
 function papel(f, ancho) {
   const a = document.createElement('article');
   a.className = 'papel';
@@ -881,8 +882,7 @@ async function driveListar(carpeta, filtro) {
 // Imágenes de Cinnamoroll en la carpeta principal (sin fondo) reemplazan al dibujo:
 // "Cinnamoroll encabezado…" va al encabezado y "cinnamoroll inicial…" a la pregunta del inicio
 async function cargarCinnamoroll() {
-  // "cinnamoroll carta" no: esa es el fondo de las cartas
-  const imgs = await driveListar(DRIVE_CARPETA, "mimeType contains 'image/' and name contains 'cinnamoroll' and not name contains 'carta'");
+  const imgs = await driveListar(DRIVE_CARPETA, "mimeType contains 'image/' and name contains 'cinnamoroll'");
   await Promise.all(imgs.map(async f => {
     // lh3 sí permite leer la imagen desde la página (CORS); la descarga directa de la API a veces lo bloquea
     const r = await fetch(`https://lh3.googleusercontent.com/d/${f.id}=w800`);
@@ -890,6 +890,11 @@ async function cargarCinnamoroll() {
     c.setAttribute('aria-label', 'Cinnamoroll');
     if (/encabezado/i.test(f.name)) {
       document.getElementById('cabeza-cinna').replaceChildren(c);
+    } else if (/carta/i.test(f.name)) { // esquina del papel de las cartas en Word; como <img> porque se clona en cada carta
+      cinnaCarta = new Image();
+      cinnaCarta.className = 'cinna';
+      cinnaCarta.alt = '';
+      cinnaCarta.src = c.toDataURL();
     } else {
       c.className = 'cinna';
       document.querySelector('#ventana svg.cinna')?.replaceWith(c);
@@ -1009,9 +1014,6 @@ async function pintarMapa() {
 
 async function cargarDrive() {
   cargarCinnamoroll().catch(() => {}); // si falla, se queda el dibujo
-  // imagen "cinnamoroll carta" en la carpeta principal: fondo del papel de las cartas en Word (si no hay, cielo dibujado)
-  driveListar(DRIVE_CARPETA, "mimeType contains 'image/' and name contains 'cinnamoroll carta'").then(([f]) =>
-    f && document.documentElement.style.setProperty('--fondo-carta', `url("${foto(f.id, 1600)}")`)).catch(() => {});
   citas.textContent = listaCartas.textContent = 'Cargando…';
   try {
     const todas = await carpetasDrive;
