@@ -82,6 +82,18 @@ dialog::backdrop{background:#2a4a6688}
 #carta{max-width:min(800px,92vw);box-shadow:6px 6px 0 var(--azul)}
 #carta .marco{margin-bottom:12px;border-radius:4px;box-shadow:0 2px 8px #0002}
 #carta button{background:var(--rosado);color:#fff;border:3px solid var(--azul-osc);border-radius:999px;padding:8px 22px;font:inherit;font-weight:600;box-shadow:3px 3px 0 var(--azul-osc);cursor:pointer}
+/* Carta en Word: papel de Cinnamoroll. La imagen "fondo carta" de Drive reemplaza el cielo con nubes dibujado */
+.papel{position:relative;padding:70px 14px 18px;border-radius:12px;box-shadow:0 2px 10px #0002;
+  background:var(--fondo-carta,radial-gradient(circle at 10% 9%,#fff 0 20px,transparent 21px),radial-gradient(circle at 17% 6%,#fff 0 26px,transparent 27px),
+    radial-gradient(circle at 24% 10%,#fff 0 18px,transparent 19px),radial-gradient(circle at 58% 5%,#ffffffb0 0 14px,transparent 15px),
+    radial-gradient(circle at 63% 4%,#ffffffb0 0 18px,transparent 19px),linear-gradient(170deg,#b6e2fa,#e3f4fd 45%,#fde2ee)) center/cover}
+.papel .cinna{position:absolute;top:4px;right:10px;width:96px;margin:0}
+.hoja{position:relative;padding:8px 16px 10px 38px;border-radius:10px;font-size:1.05rem;line-height:2rem;color:var(--texto);
+  background-color:#ffffffe6;background-position:0 8px;
+  background-image:linear-gradient(90deg,transparent 24px,#f7a8c488 24px 26px,transparent 26px),
+    repeating-linear-gradient(transparent 0 calc(2rem - 1px),#cfe8f8 calc(2rem - 1px) 2rem)}
+.hoja p{margin:0;min-height:2rem;white-space:pre-wrap}
+.hoja::after{content:'♡ ☁ ♡';display:block;text-align:right;color:var(--rosado)}
 /* Modo noche (al tocar la luna): morado y rojo, solo con "Practica Mon Minet" */
 .luna{z-index:3;padding:0;border:0;background:none;cursor:pointer;pointer-events:auto;transition:box-shadow .9s ease-in-out,filter .9s}
 body.noche{--cielo:#3a1c4f;--azul:#9b4dca;--azul-osc:#e0435c;--rosado:#c2185b;--rosa-letra:#ff6b8b;--fondo:#160b1f;--texto:#f6dbe6;--nube:#3a1650;
@@ -535,14 +547,12 @@ function abrirCarta(titulo, pags) {
   cont.textContent = '';
   const ancho = Math.min(800, innerWidth * .92) - 48; // ancho del diálogo menos su padding
   for (const f of pags) {
-    const marco = document.createElement('div');
-    marco.className = 'marco';
-    if (!f.mimeType.startsWith('image/')) { // documento: visor de Drive
-      Object.assign(marco.style, {width: ancho + 'px', height: '75vh', background: '#fff'});
-      marco.innerHTML = `<iframe src="https://drive.google.com/file/d/${f.id}/preview" title="Carta"></iframe>`;
-      cont.append(marco);
+    if (!f.mimeType.startsWith('image/')) { // Word o Google Docs en el papel de carta; PDF en el visor de Drive
+      cont.append(f.mimeType === 'application/pdf' ? visor(f, ancho) : papel(f, ancho));
       continue;
     }
+    const marco = document.createElement('div');
+    marco.className = 'marco';
     const img = document.createElement('img');
     encajar(marco, img, f, ancho, Infinity);
     img.src = foto(f.id, 1600);
@@ -551,6 +561,79 @@ function abrirCarta(titulo, pags) {
   }
   dlgCarta.showModal();
   dlgCarta.scrollTop = 0;
+}
+
+function visor(f, ancho) {
+  const marco = document.createElement('div');
+  marco.className = 'marco';
+  Object.assign(marco.style, {width: ancho + 'px', height: '75vh', background: '#fff'});
+  marco.innerHTML = `<iframe src="https://drive.google.com/file/d/${f.id}/preview" title="Carta"></iframe>`;
+  return marco;
+}
+
+// Papel de carta de Cinnamoroll con el texto del Word; si no se puede leer, se abre en el visor de Drive
+const cinnaCarta = document.querySelector('svg.cinna').cloneNode(true); // el original se reemplaza al cargar Drive
+function papel(f, ancho) {
+  const a = document.createElement('article');
+  a.className = 'papel';
+  const hoja = document.createElement('div');
+  hoja.className = 'hoja';
+  hoja.textContent = 'Abriendo la carta…';
+  a.append(cinnaCarta.cloneNode(true), hoja);
+  leerDocx(f).then(ps => hoja.replaceChildren(...ps)).catch(() => a.replaceWith(visor(f, ancho)));
+  return a;
+}
+
+// Word → párrafos con negrita, cursiva, saltos y alineación. Un Google Docs se pide a Drive ya convertido a Word.
+async function leerDocx(f) {
+  const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  const r = await fetch(f.mimeType === 'application/vnd.google-apps.document'
+    ? `https://www.googleapis.com/drive/v3/files/${f.id}/export?mimeType=${DOCX}&key=${DRIVE_CLAVE}`
+    : `https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&key=${DRIVE_CLAVE}`);
+  if (!r.ok) throw new Error(`Drive respondió ${r.status}`);
+  const xml = new DOMParser().parseFromString(await sacarDeZip(await r.arrayBuffer(), 'word/document.xml'), 'application/xml');
+  const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+  const activo = (pr, tag) => { // <w:b/> encendido, salvo <w:b w:val="0"/>
+    const e = pr?.getElementsByTagNameNS(W, tag)[0];
+    return !!e && !/^(0|false)$/.test(e.getAttributeNS(W, 'val') || '');
+  };
+  return [...xml.getElementsByTagNameNS(W, 'p')].map(p => {
+    const el = document.createElement('p');
+    const jc = p.getElementsByTagNameNS(W, 'jc')[0]?.getAttributeNS(W, 'val');
+    if (jc === 'center' || jc === 'right') el.style.textAlign = jc;
+    for (const run of p.getElementsByTagNameNS(W, 'r')) {
+      const pr = run.getElementsByTagNameNS(W, 'rPr')[0];
+      let destino = el;
+      if (activo(pr, 'b')) destino = destino.appendChild(document.createElement('strong'));
+      if (activo(pr, 'i')) destino = destino.appendChild(document.createElement('em'));
+      for (const n of run.children) {
+        if (n.localName === 't') destino.append(n.textContent);
+        else if (n.localName === 'br') destino.append(document.createElement('br'));
+        else if (n.localName === 'tab') destino.append('\t');
+      }
+    }
+    return el;
+  });
+}
+
+// Un .docx es un zip: busca el archivo en el directorio central y lo descomprime con el navegador
+async function sacarDeZip(buf, nombre) {
+  const v = new DataView(buf);
+  let fin = buf.byteLength - 22;
+  while (fin >= 0 && v.getUint32(fin, true) !== 0x06054b50) fin--;
+  if (fin < 0) throw new Error('No es un Word');
+  for (let i = 0, c = v.getUint32(fin + 16, true); i < v.getUint16(fin + 10, true); i++) {
+    const largo = v.getUint16(c + 28, true);
+    if (new TextDecoder().decode(new Uint8Array(buf, c + 46, largo)) === nombre) {
+      const local = v.getUint32(c + 42, true);
+      const datos = new Uint8Array(buf, local + 30 + v.getUint16(local + 26, true) + v.getUint16(local + 28, true),
+        v.getUint32(c + 20, true));
+      if (v.getUint16(c + 10, true) === 0) return new TextDecoder().decode(datos); // guardado sin comprimir
+      return new Response(new Blob([datos]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+    }
+    c += 46 + largo + v.getUint16(c + 30, true) + v.getUint16(c + 32, true);
+  }
+  throw new Error('No es un Word');
 }
 
 // Contador
@@ -925,6 +1008,9 @@ async function pintarMapa() {
 
 async function cargarDrive() {
   cargarCinnamoroll().catch(() => {}); // si falla, se queda el dibujo
+  // imagen "fondo carta" en la carpeta principal: fondo del papel de las cartas en Word (si no hay, cielo dibujado)
+  driveListar(DRIVE_CARPETA, "mimeType contains 'image/' and name contains 'fondo carta'").then(([f]) =>
+    f && document.documentElement.style.setProperty('--fondo-carta', `url("${foto(f.id, 1600)}")`)).catch(() => {});
   citas.textContent = listaCartas.textContent = 'Cargando…';
   try {
     const todas = await carpetasDrive;
