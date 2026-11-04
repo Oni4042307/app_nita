@@ -181,8 +181,8 @@ body.noche nav button:not(.solo-noche),body:not(.noche) .solo-noche{display:none
 <div id="inicio">
   <div id="paso1">
     <div class="sobre"><div class="solapa"></div><span class="sello">♥</span></div>
-    <p class="titulo">A Little Surprise</p>
-    <svg id="arco" viewBox="0 0 140 160" role="button" aria-label="Bow">
+    <p class="titulo">Una pequeña sorpresa</p>
+    <svg id="arco" viewBox="0 0 140 160" role="button" aria-label="Arco">
       <path class="limbo" d="M15 80Q70-15 125 80"/>
       <circle class="puntas" cx="15" cy="80" r="6"/><circle class="puntas" cx="125" cy="80" r="6"/>
       <polyline class="cuerda" points="15,80 70,80 125,80"/>
@@ -193,12 +193,12 @@ body.noche nav button:not(.solo-noche),body:not(.noche) .solo-noche{display:none
       </g>
     </svg>
     <div class="carga"><i></i></div>
-    <p class="pista">Hold to draw the bow – release when it's full ♡</p>
+    <p class="pista">Mantén presionado para tensar el arco y suelta cuando esté lleno ♡</p>
   </div>
   <div id="ventana" hidden>
-    <div class="barra"><span>LOVE ☁</span><span><i></i><i></i><i></i></span></div>
+    <div class="barra"><span>AMOR ☁</span><span><i></i><i></i><i></i></span></div>
     <div class="cuerpo">
-      <p id="pregunta">Do you still love me?</p>
+      <p id="pregunta">¿Todavía me amas?</p>
       <!-- Cinnamoroll (fan art) abrazando un corazón -->
       <svg class="cinna" viewBox="0 0 200 175" aria-hidden="true">
         <g stroke="#9cc6e4" stroke-width="3" fill="#fff">
@@ -220,7 +220,7 @@ body.noche nav button:not(.solo-noche),body:not(.noche) .solo-noche{display:none
           <ellipse cx="118" cy="134" rx="9" ry="7"/>
         </g>
       </svg>
-      <div class="opciones"><button id="si">YES</button><button id="no">NO</button></div>
+      <div class="opciones"><button id="si">SÍ</button><button id="no">NO</button></div>
     </div>
   </div>
 </div>
@@ -288,7 +288,7 @@ const DRIVE_CARPETA = '1bfBzTVraj5zJXESwc57ofePtUybQEaMh'; // ID de la carpeta p
 const DRIVE_CLAVE = 'AIzaSyCzEVuzj9P6EhPD7hwDVhsYKPEGUc-XFfQ';   // clave de API de Google
 // ✏️ ====================== ✏️
 
-// Inicio: sobre + arco → ventana con la pregunta → solo se entra con "YES"
+// Inicio: sobre + arco → ventana con la pregunta → solo se entra con "SÍ"
 const inicio = document.getElementById('inicio');
 const si = document.getElementById('si'), no = document.getElementById('no');
 const arco = document.getElementById('arco'), barraCarga = document.querySelector('.carga i');
@@ -361,7 +361,7 @@ function disparar() {
 }
 
 si.onclick = () => {
-  document.getElementById('pregunta').textContent = 'Yayyy! I knew it ♡';
+  document.getElementById('pregunta').textContent = '¡Yeiii! Lo sabía ♡';
   document.querySelector('#inicio .opciones').remove();
   const c = document.querySelector('.cinna').getBoundingClientRect();
   for (let i = 0; i < 40; i++) { // explosión de corazones desde Cinnamoroll
@@ -985,7 +985,7 @@ async function pintarMapa() {
   const mapa = L.map(div);
   // mapa de Esri: no pide clave (CARTO empezó a pedirla y mostraba "API KEY REQUIRED")
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
-    {maxZoom: 19, attribution: 'Tiles © Esri'}).addTo(mapa);
+    {maxZoom: 19, attribution: 'Mapa © Esri'}).addTo(mapa);
   // camino punteado de un lugar al siguiente, en el orden de las carpetas
   L.polyline(lista.map(l => l.pos), {color: '#f48fb8', weight: 3, dashArray: '6 8'}).addTo(mapa);
   const corazon = L.divIcon({className: 'pin', html: '♥', iconSize: [32, 32]});
