@@ -82,7 +82,7 @@ dialog::backdrop{background:#2a4a6688}
 #carta{max-width:min(800px,92vw);box-shadow:6px 6px 0 var(--azul)}
 #carta .marco{margin-bottom:12px;border-radius:4px;box-shadow:0 2px 8px #0002}
 #carta button{background:var(--rosado);color:#fff;border:3px solid var(--azul-osc);border-radius:999px;padding:8px 22px;font:inherit;font-weight:600;box-shadow:3px 3px 0 var(--azul-osc);cursor:pointer}
-/* Carta en Word: papel de Cinnamoroll. La imagen "fondo carta" de Drive reemplaza el cielo con nubes dibujado */
+/* Carta en Word: papel de Cinnamoroll. La imagen "cinnamoroll carta" de Drive reemplaza el cielo con nubes dibujado */
 .papel{position:relative;padding:70px 14px 18px;border-radius:12px;box-shadow:0 2px 10px #0002;
   background:var(--fondo-carta,radial-gradient(circle at 10% 9%,#fff 0 20px,transparent 21px),radial-gradient(circle at 17% 6%,#fff 0 26px,transparent 27px),
     radial-gradient(circle at 24% 10%,#fff 0 18px,transparent 19px),radial-gradient(circle at 58% 5%,#ffffffb0 0 14px,transparent 15px),
@@ -881,7 +881,8 @@ async function driveListar(carpeta, filtro) {
 // Imágenes de Cinnamoroll en la carpeta principal (sin fondo) reemplazan al dibujo:
 // "Cinnamoroll encabezado…" va al encabezado y "cinnamoroll inicial…" a la pregunta del inicio
 async function cargarCinnamoroll() {
-  const imgs = await driveListar(DRIVE_CARPETA, "mimeType contains 'image/' and name contains 'cinnamoroll'");
+  // "cinnamoroll carta" no: esa es el fondo de las cartas
+  const imgs = await driveListar(DRIVE_CARPETA, "mimeType contains 'image/' and name contains 'cinnamoroll' and not name contains 'carta'");
   await Promise.all(imgs.map(async f => {
     // lh3 sí permite leer la imagen desde la página (CORS); la descarga directa de la API a veces lo bloquea
     const r = await fetch(`https://lh3.googleusercontent.com/d/${f.id}=w800`);
@@ -1008,8 +1009,8 @@ async function pintarMapa() {
 
 async function cargarDrive() {
   cargarCinnamoroll().catch(() => {}); // si falla, se queda el dibujo
-  // imagen "fondo carta" en la carpeta principal: fondo del papel de las cartas en Word (si no hay, cielo dibujado)
-  driveListar(DRIVE_CARPETA, "mimeType contains 'image/' and name contains 'fondo carta'").then(([f]) =>
+  // imagen "cinnamoroll carta" en la carpeta principal: fondo del papel de las cartas en Word (si no hay, cielo dibujado)
+  driveListar(DRIVE_CARPETA, "mimeType contains 'image/' and name contains 'cinnamoroll carta'").then(([f]) =>
     f && document.documentElement.style.setProperty('--fondo-carta', `url("${foto(f.id, 1600)}")`)).catch(() => {});
   citas.textContent = listaCartas.textContent = 'Cargando…';
   try {
