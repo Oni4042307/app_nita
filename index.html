@@ -60,6 +60,7 @@ h1{text-align:center;font-size:2rem}
 .grande{font-size:4.5rem;text-align:center;color:var(--azul-osc);margin:24px 0 0}
 .centro{text-align:center}
 #contador .centro{font-size:1.1rem}
+.cancion{display:block;width:100%;border:0;border-radius:12px;box-shadow:4px 4px 0 var(--azul)}
 #citas details{margin-bottom:14px;padding:4px 14px;border:3px solid var(--azul);border-radius:6px;background:#fff;box-shadow:4px 4px 0 var(--azul)}
 #citas summary{display:flex;align-items:center;gap:8px;padding:10px 0;list-style:none;cursor:pointer;font-size:1.3rem;color:var(--azul-osc)}
 #citas summary::-webkit-details-marker{display:none}
@@ -236,6 +237,9 @@ body.noche nav button:not(.solo-noche),body:not(.noche) .solo-noche{display:none
     <p class="grande" id="dias"></p>
     <p class="centro" id="detalle"></p>
     <p class="centro" id="segundos"></p>
+    <h1>Nuestra canción</h1>
+    <iframe class="cancion" title="Nuestra canción: You Are Enough" src="https://open.spotify.com/embed/track/1Wdj4wRDYS7aT4CoPS0mAH"
+      height="152" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
   </section>
   <section id="album" hidden><h1>Nuestro álbum</h1><div id="citas"></div></section>
   <section id="lugares" hidden><h1>Nuestros lugares</h1><div id="mapa"></div><p class="centro" id="lugares-msg"></p></section>
